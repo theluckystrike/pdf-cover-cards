@@ -34,13 +34,20 @@ export class PdfCoverView extends BasesView implements HoverParent {
 
 	constructor(
 		controller: QueryController,
-		private readonly containerEl: HTMLElement,
+		readonly containerEl: HTMLElement,
 		private readonly plugin: PdfCoverCardsPlugin,
 	) {
 		super(controller);
 		this.containerEl.addClass('pdf-cover-cards');
 		// Bases hides an empty view container in embeds and then never loads it, so the view starts with a line of text.
 		this.containerEl.createDiv({ cls: 'pdf-cover-cards-empty', text: 'Loading covers...' });
+	}
+
+	/**
+	 * Events go here, not in the constructor: Bases can unload a view and load the same object again (for example
+	 * when the plugin reloads with a base open), and an unload removes everything that was registered.
+	 */
+	onload(): void {
 		this.plugin.views.add(this);
 		this.register(onProChange(() => this.schedule()));
 		this.registerEvent(
@@ -48,6 +55,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 				if (f instanceof TFile && this.cards.some((c) => c.choice?.path === f.path)) this.schedule();
 			}),
 		);
+		if (this.cards.length > 0) this.schedule();
 	}
 
 	onunload(): void {

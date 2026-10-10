@@ -175,6 +175,26 @@ describe(`${pluginId} in the real app`, function () {
 		await waitFor((x) => card(x, 'Camera Basics.md')?.page === 1, 'back to page 1');
 	});
 
+	it('after a plugin reload with the base open, the view runs the new plugin code and follows note edits', async function () {
+		const note = 'Library/Night Trains.md';
+		const before = await obsidianPage.read(note);
+		await obsidianPage.openFile('Library/Library.base');
+		await waitFor((x) => card(x, 'Night Trains.md')?.page === 1, 'card present');
+		expect((await reloadPlugin(pluginId)).errors).toEqual([]);
+		// viewState() only sees views of the loaded plugin, so a stale view of the old code times out here.
+		await waitFor((x) => card(x, 'Night Trains.md')?.page === 1, 'no cover view in the reloaded plugin');
+		const command = await browser.executeObsidian(({ app }, id) => {
+			const commands = (app as unknown as { commands: { findCommand(id: string): { checkCallback?(checking: boolean): boolean } | undefined } }).commands;
+			return commands.findCommand(`${id}:export-contact-sheet`)?.checkCallback?.(true) ?? false;
+		}, pluginId);
+		expect(command).toBe(true);
+		await obsidianPage.write(note, before.replace('[[Night Trains.pdf]]', '[[Night Trains.pdf#page=2]]'));
+		await fillAll();
+		await waitFor((x) => card(x, 'Night Trains.md')?.page === 2, 'page 2 not picked up after the reload');
+		await obsidianPage.write(note, before);
+		await waitFor((x) => card(x, 'Night Trains.md')?.page === 1, 'back to page 1');
+	});
+
 	it('shows a readable message for a PDF that cannot be read', async function () {
 		await browser.executeObsidian(async ({ app }) => {
 			await app.vault.create('Library/PDFs/Broken.pdf', 'this is not a pdf');

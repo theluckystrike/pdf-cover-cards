@@ -60,6 +60,7 @@ export default class PdfCoverCardsPlugin extends Plugin {
 			},
 		});
 		this.app.workspace.onLayoutReady(() => {
+			void this.reopenStaleBases();
 			void pro.refresh();
 			this.registerInterval(window.setInterval(() => void pro.refresh(), PRO_TICK_MS));
 		});
@@ -81,6 +82,24 @@ export default class PdfCoverCardsPlugin extends Plugin {
 	/** Draws every open cover view again. */
 	redrawAll(): void {
 		for (const v of this.views) v.schedule(0);
+	}
+
+	/**
+	 * After a plugin update or reload, Bases keeps showing the cover views of the old plugin code: they miss Pro and
+	 * the commands. This opens each such base tab again, so its view runs the current code. A first start finds none.
+	 */
+	async reopenStaleBases(): Promise<number> {
+		let n = 0;
+		for (const leaf of this.app.workspace.getLeavesOfType('bases')) {
+			const el = leaf.view.containerEl;
+			const stale = el.querySelector('.pdf-cover-cards') !== null && ![...this.views].some((v) => el.contains(v.containerEl));
+			if (!stale) continue;
+			const state = leaf.getViewState();
+			await leaf.setViewState({ type: 'empty' });
+			await leaf.setViewState(state);
+			n++;
+		}
+		return n;
 	}
 
 	/** The cover view in the active tab, or else the one drawn last. */
