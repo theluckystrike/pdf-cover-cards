@@ -1,0 +1,10 @@
+filters:
+  and:
+    - file.ext == "pdf"
+    - file.path.contains("PDFs/")
+views:
+  - type: pdf-cover-cards
+    name: All PDFs
+    order:
+      - file.name
+    cardWidth: 150

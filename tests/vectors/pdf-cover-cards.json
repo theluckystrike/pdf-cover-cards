@@ -1,0 +1,156 @@
+{
+ "slug": "pdf-cover-cards",
+ "module": "pdf-cover-cards/src/cover",
+ "function": "coverTarget",
+ "note": "args = [property value as text]; expected = {path, page} of the PDF to draw, or null when the value is not a PDF link. Page defaults to 1.",
+ "cases": [
+  {
+   "name": "wikilink",
+   "args": [
+    "[[Papers/Attention.pdf]]"
+   ],
+   "expected": {
+    "path": "Papers/Attention.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "wikilink with page and alias",
+   "args": [
+    "[[Attention.pdf#page=3|paper]]"
+   ],
+   "expected": {
+    "path": "Attention.pdf",
+    "page": 3
+   }
+  },
+  {
+   "name": "embed form",
+   "args": [
+    "![[scan.PDF]]"
+   ],
+   "expected": {
+    "path": "scan.PDF",
+    "page": 1
+   }
+  },
+  {
+   "name": "markdown link with encoded space",
+   "args": [
+    "[x](My%20Book.pdf#page=12)"
+   ],
+   "expected": {
+    "path": "My Book.pdf",
+    "page": 12
+   }
+  },
+  {
+   "name": "markdown link in angle brackets",
+   "args": [
+    "[Manual](<Docs/User manual.pdf>)"
+   ],
+   "expected": {
+    "path": "Docs/User manual.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "bare path",
+   "args": [
+    "Books/manual.pdf"
+   ],
+   "expected": {
+    "path": "Books/manual.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "bare path with page",
+   "args": [
+    "Books/manual.pdf#page=7"
+   ],
+   "expected": {
+    "path": "Books/manual.pdf",
+    "page": 7
+   }
+  },
+  {
+   "name": "surrounding spaces",
+   "args": [
+    "  [[a b.pdf]]  "
+   ],
+   "expected": {
+    "path": "a b.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "page with other pdf.js parameters",
+   "args": [
+    "[[a.pdf#zoom=50&page=4]]"
+   ],
+   "expected": {
+    "path": "a.pdf",
+    "page": 4
+   }
+  },
+  {
+   "name": "heading subpath is page 1",
+   "args": [
+    "[[a.pdf#Chapter 2]]"
+   ],
+   "expected": {
+    "path": "a.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "bad percent encoding kept as written",
+   "args": [
+    "[x](50%25%zz.pdf)"
+   ],
+   "expected": {
+    "path": "50%25%zz.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "not a pdf",
+   "args": [
+    "[[cover.png]]"
+   ],
+   "expected": null
+  },
+  {
+   "name": "pdf in the middle of a name",
+   "args": [
+    "[[report.pdf.md]]"
+   ],
+   "expected": null
+  },
+  {
+   "name": "external url",
+   "args": [
+    "https://example.com/paper"
+   ],
+   "expected": null
+  },
+  {
+   "name": "empty value",
+   "args": [
+    ""
+   ],
+   "expected": null
+  },
+  {
+   "name": "page zero falls back to 1",
+   "args": [
+    "[[a.pdf#page=0]]"
+   ],
+   "expected": {
+    "path": "a.pdf",
+    "page": 1
+   }
+  }
+ ]
+}

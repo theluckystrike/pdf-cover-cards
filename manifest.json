@@ -1,0 +1,11 @@
+{
+	"id": "pdf-cover-cards",
+	"name": "PDF Cover Cards",
+	"version": "1.0.0",
+	"minAppVersion": "1.13.4",
+	"description": "Shows the first page, or a chosen page, of the PDF linked from each note as the card cover in a Bases view.",
+	"author": "Michael Lip",
+	"authorUrl": "https://github.com/theluckystrike",
+	"fundingUrl": "https://github.com/sponsors/theluckystrike",
+	"isDesktopOnly": false
+}

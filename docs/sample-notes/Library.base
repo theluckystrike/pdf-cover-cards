@@ -1,0 +1,30 @@
+filters:
+  and:
+    - file.hasTag("library")
+views:
+  - type: pdf-cover-cards
+    name: Shelf
+    order:
+      - file.name
+      - author
+      - year
+    pdfProperty: note.pdf
+    cardWidth: 180
+  - type: pdf-cover-cards
+    name: Paper headers
+    filters:
+      and:
+        - type == "paper"
+    order:
+      - file.name
+      - author
+    pdfProperty: note.pdf
+    cardWidth: 260
+    crop: top-half
+  - type: table
+    name: Table
+    order:
+      - file.name
+      - author
+      - year
+      - status

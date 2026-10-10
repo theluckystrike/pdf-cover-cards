@@ -1,0 +1,135 @@
+.pdf-cover-cards {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-4);
+	overflow: auto;
+	height: 100%;
+}
+
+.pdf-cover-cards-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-4-3);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.pdf-cover-cards-limit {
+	color: var(--text-warning);
+}
+
+.pdf-cover-cards-export {
+	font-size: var(--font-ui-smaller);
+}
+
+.pdf-cover-cards-empty {
+	color: var(--text-muted);
+	padding: var(--size-4-4) 0;
+}
+
+.pdf-cover-cards-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--pdf-cover-cards-width, 180px), 1fr));
+	gap: var(--size-4-4);
+	align-items: start;
+}
+
+.pdf-cover-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.pdf-cover-card:hover,
+.pdf-cover-card:focus-visible {
+	border-color: var(--interactive-accent);
+	box-shadow: var(--shadow-s);
+}
+
+.pdf-cover-card-cover {
+	position: relative;
+	aspect-ratio: 1 / var(--pdf-cover-cards-aspect, 1.414);
+	background-color: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pdf-cover-card-cover img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: top;
+}
+
+.pdf-cover-card-cover.is-loading {
+	background: linear-gradient(90deg, var(--background-secondary) 0%, var(--background-modifier-hover) 50%, var(--background-secondary) 100%);
+}
+
+.pdf-cover-card-cover.is-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2);
+	color: var(--text-faint);
+}
+
+.pdf-cover-card-icon .svg-icon {
+	width: var(--icon-xl);
+	height: var(--icon-xl);
+}
+
+.pdf-cover-card-note {
+	font-size: var(--font-ui-smaller);
+	text-align: center;
+	padding: 0 var(--size-4-2);
+}
+
+.pdf-cover-card-pages {
+	position: absolute;
+	right: var(--size-4-1);
+	bottom: var(--size-4-1);
+	padding: 0 var(--size-4-1);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	opacity: 0.9;
+}
+
+.pdf-cover-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-1);
+	padding: var(--size-4-2);
+	font-size: var(--font-ui-small);
+}
+
+.pdf-cover-card-title {
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+	overflow-wrap: anywhere;
+}
+
+.pdf-cover-card-prop {
+	display: flex;
+	gap: var(--size-4-1);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.pdf-cover-card-prop-name {
+	color: var(--text-faint);
+}
+
+.pdf-cover-card-prop-value {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

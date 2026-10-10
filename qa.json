@@ -1,0 +1,79 @@
+[
+	{
+		"feature": "shelf",
+		"caption": "Twelve notes about books, papers and manuals in one base. Each card shows page 1 of the PDF that the note links to, with the author and the year.",
+		"note": "Library.base",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+		"wait": 900
+	},
+	{
+		"feature": "link-fallback",
+		"caption": "Bread at Home has no PDF property. It embeds its PDF in the text, so its card uses that PDF.",
+		"note": "Library.base",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 500)); const leaf = app.workspace.getLeaf('split', 'vertical'); await leaf.openFile(app.vault.getFileByPath('PDF Cover Cards/Bread at Home.md')); window.__pccLeaf = leaf; await new Promise((r) => setTimeout(r, 900)); for (const v of app.plugins.plugins['pdf-cover-cards'].views) await v.fillAll(); const c = [...document.querySelectorAll('.pdf-cover-card')].find((x) => x.dataset.path.endsWith('Bread at Home.md')); c && c.scrollIntoView({ block: 'center' }); await new Promise((r) => setTimeout(r, 700)); return 'ok'; })()",
+		"after": "(async () => { window.__pccLeaf && window.__pccLeaf.detach(); return 'ok'; })()",
+		"wait": 1200
+	},
+	{
+		"feature": "pdf-files",
+		"caption": "A base of PDF files: each PDF is its own cover.",
+		"note": "PDF files.base",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+		"wait": 900
+	},
+	{
+		"feature": "embedded",
+		"caption": "The cover view embedded in a reading list note.",
+		"note": "Reading list.md",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+		"wait": 1200
+	},
+	{
+		"feature": "crop",
+		"caption": "Pro: covers cropped to the top half of the page, so the title and abstract of each paper are readable.",
+		"note": "Views/Paper headers.md",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.opts.http = async () => ({ status: 200, json: { data: { viewer: { login: 'demo-reader' }, user: { sponsorshipForViewerAsSponsor: { isActive: true, isOneTimePayment: false, tier: { name: '$5 a month', monthlyPriceInCents: 500 } } } } } }); app.secretStorage.setSecret('pdf-cover-cards-github-token', 'gho_' + '0'.repeat(36)); await app.plugins.plugins['pdf-cover-cards'].pro.refreshNow(); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+		"after": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); return 'ok'; })()",
+		"wait": 1200
+	},
+	{
+		"feature": "contact-sheet",
+		"caption": "Pro: every cover of the view on one PNG image with the titles, saved in the vault.",
+		"note": "Library.base",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.opts.http = async () => ({ status: 200, json: { data: { viewer: { login: 'demo-reader' }, user: { sponsorshipForViewerAsSponsor: { isActive: true, isOneTimePayment: false, tier: { name: '$5 a month', monthlyPriceInCents: 500 } } } } } }); app.secretStorage.setSecret('pdf-cover-cards-github-token', 'gho_' + '0'.repeat(36)); await app.plugins.plugins['pdf-cover-cards'].pro.refreshNow(); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); const f = await app.plugins.plugins['pdf-cover-cards'].exportSheet(app.plugins.plugins['pdf-cover-cards'].targetView()); window.__pccSheet = f && f.path; await new Promise((r) => setTimeout(r, 900)); return 'ok'; })()",
+		"after": "(async () => { const f = app.vault.getFileByPath(window.__pccSheet || ''); app.workspace.getLeaf(false).detach(); if (f) await app.vault.delete(f); app.plugins.plugins['pdf-cover-cards'].pro.signOut(); return 'ok'; })()",
+		"wait": 1200
+	},
+	{
+		"feature": "settings",
+		"caption": "Settings after sign in: the Pro section with the GitHub account, cover sharpness, PDFs drawn at the same time, saved covers.",
+		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.opts.http = async () => ({ status: 200, json: { data: { viewer: { login: 'demo-reader' }, user: { sponsorshipForViewerAsSponsor: { isActive: true, isOneTimePayment: false, tier: { name: '$5 a month', monthlyPriceInCents: 500 } } } } } }); app.secretStorage.setSecret('pdf-cover-cards-github-token', 'gho_' + '0'.repeat(36)); await app.plugins.plugins['pdf-cover-cards'].pro.refreshNow(); app.setting.open(); app.setting.openTabById('pdf-cover-cards'); await new Promise((r) => setTimeout(r, 500)); return 'ok'; })()",
+		"after": "app.setting.close(); app.plugins.plugins['pdf-cover-cards'].pro.signOut(); 'ok'"
+	},
+	{
+		"feature": "pdf-cover-cards",
+		"caption": "Open the library base, see the PDF files as covers, then the Pro crop on the papers.",
+		"frames": [
+			{
+				"note": "Library.base",
+				"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+				"hold": 2200
+			},
+			{
+				"note": "PDF files.base",
+				"eval": "(async () => { await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+				"hold": 1800
+			},
+			{
+				"note": "Views/Paper headers.md",
+				"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.opts.http = async () => ({ status: 200, json: { data: { viewer: { login: 'demo-reader' }, user: { sponsorshipForViewerAsSponsor: { isActive: true, isOneTimePayment: false, tier: { name: '$5 a month', monthlyPriceInCents: 500 } } } } } }); app.secretStorage.setSecret('pdf-cover-cards-github-token', 'gho_' + '0'.repeat(36)); await app.plugins.plugins['pdf-cover-cards'].pro.refreshNow(); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+				"hold": 2200
+			},
+			{
+				"note": "Reading list.md",
+				"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+				"hold": 1800
+			}
+		]
+	}
+]
