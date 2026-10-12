@@ -168,8 +168,12 @@ describe(`${pluginId} in the real app`, function () {
 		await waitFor((x) => card(x, 'Camera Basics.md')?.status === 'drawn' || card(x, 'Camera Basics.md')?.status === 'waiting', 'card present');
 		await obsidianPage.write(note, before.replace('[[Camera Basics.pdf]]', '[[Camera Basics.pdf#page=2]]'));
 		await fillAll();
-		const s = await waitFor((x) => card(x, 'Camera Basics.md')?.page === 2 && card(x, 'Camera Basics.md')?.status === 'drawn', 'page 2 drawn');
-		// The contents page is white where the cover is dark.
+		// The contents page is white where the cover is dark. "drawn" can be reported before the canvas is
+		// fully painted on a slow runner, so the colour is part of the wait, not a one-shot read.
+		const s = await waitFor((x) => {
+			const c = card(x, 'Camera Basics.md');
+			return c?.page === 2 && c.status === 'drawn' && near(c.color, '#ffffff');
+		}, 'page 2 drawn white');
 		expect(near(card(s, 'Camera Basics.md')!.color, '#ffffff')).toBe(true);
 		await obsidianPage.write(note, before);
 		await waitFor((x) => card(x, 'Camera Basics.md')?.page === 1, 'back to page 1');

@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.0.2
+
+### Patch Changes
+
+- efdff8f: Correct the GitHub Sponsors payment, check and token storage text in the README.
+
 ## 1.0.1
 
 ### Patch Changes
