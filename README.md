@@ -10,17 +10,25 @@ PDF Cover Cards is a layout for the core Bases plugin. The base selects, filters
 
 ### Page 1 of the linked PDF on each card
 
-Choose a property that links to the PDF, for example `pdf: "[[Field Guide to Mosses.pdf]]"`. Each card shows page 1 of that file, the note name, the properties of the view and the page count. Click a card to open the note. Ctrl-click (Cmd-click on macOS) opens it in a new tab.
+Choose a property that links to the PDF, for example `pdf: "[[Field Guide to Mosses.pdf]]"`. Each card shows page 1 of that file, the note name, the properties of the view and the page count. Click a card to open the note. Ctrl-click (Cmd-click on macOS) opens it in a new tab. The plugin can also use the first PDF that a note links to or embeds.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/shelf.png" alt="Twelve cards with drawn book, manual and paper covers, each with author and year" width="720">
 
-### Which PDF and which page
+<details><summary>How the plugin finds the PDF and the page</summary>
 
-The plugin looks for the PDF in this order. A PDF file in the base is its own cover. Next comes the PDF property of the view, which can hold one link or a list. Last comes the first PDF that the note links to or embeds, so a note with `![[Bread at Home.pdf]]` in its text gets that cover with no property at all.
+The plugin looks for the PDF in this order. A PDF file in the base is its own cover. Next comes the PDF property of the view, which can hold one link or a list. Last comes the first PDF that the note links to or embeds.
 
-Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]`. Wikilinks, Markdown links, embeds and plain paths all work.
+Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]`.
+
+</details>
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/link-fallback.png" alt="A note that embeds its PDF in the text, next to the base where that note has the PDF as its cover" width="720">
+
+### Open the PDF at the cover page
+
+Each card with a PDF has an "Open at page N" button. The button opens the PDF of the cover at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab. Cards without a PDF have no button.
+
+<img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/open-at-page.png" alt="Library cards, each with an Open at page 1 button under the author and the year" width="720">
 
 ### PDF files as cards
 
@@ -51,8 +59,6 @@ Export every cover of the view to one PNG image, with the note name under each p
 1. Open "Settings → Community plugins" and turn off restricted mode.
 2. Select "Browse", search for "PDF Cover Cards", then select "Install" and "Enable".
 3. Make sure that the core plugin "Bases" is on ("Settings → Core plugins").
-
-To install by hand, copy `main.js`, `manifest.json` and `styles.css` from the latest release into `<vault>/.obsidian/plugins/pdf-cover-cards/`. Then enable the plugin. You need Obsidian 1.13.4 or later. The plugin works on desktop and on mobile.
 
 ## Usage
 
@@ -104,15 +110,11 @@ No. It only reads them. The contact sheet export makes a new PNG file. Saved cov
 
 ### How is this different from the core Cards layout?
 
-The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page. The request for this has 16 votes on the Obsidian forum ("Allow PDFs as card image in Base").
-
-### How is this different from Dynamic Views?
-
-Dynamic Views has card and masonry layouts with image covers. Its code treats a PDF as a file icon, not as a picture.
+The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page. The first post of the request on the Obsidian forum ("Allow PDFs as card image in Base") has 16 likes.
 
 ### How fast is it?
 
-In the end-to-end test, a base of 200 notes drew its first 30 covers from 12 PDFs in 0.9 to 1.2 seconds on Obsidian 1.14.4 on an M3 Pro Mac. The first open after the app starts is slower, because Obsidian loads its PDF reader then. Large scanned PDFs take longer.
+The plugin draws only the covers near the screen. In the end-to-end test, a base of 200 notes with 12 PDFs draws its first 30 covers. The time depends on your device and on the PDFs. The first open after the app starts is slower, because Obsidian loads its PDF reader then. Large scanned PDFs take longer.
 
 ### Which PDFs work?
 
@@ -132,4 +134,4 @@ After a successful check, Pro can work offline for up to 14 days. Sign out or a 
 
 ## Support
 
-Report bugs and feature requests in this repository's GitHub issues. Add your Obsidian version and, if you can, a small sample PDF.
+Report bugs and feature requests in this repository's GitHub issues.

@@ -15,6 +15,13 @@
 		"wait": 1200
 	},
 	{
+		"feature": "open-at-page",
+		"caption": "Each card with a PDF has an Open at page button under its properties.",
+		"note": "Library.base",
+		"eval": "(async () => { const p = app.plugins.plugins['pdf-cover-cards']; p.pro.signOut(); const end = Date.now() + 10000; while (Date.now() < end) { const v = p.targetView(); if (v?.cards.length === 12) { await v.fillAll(); const images = [...v.containerEl.querySelectorAll('.pdf-cover-card-cover img')]; if (v.cards.every((c) => c.status === 'drawn') && images.length === 12) { await Promise.all(images.map((img) => img.decode())); v.containerEl.scrollTo({ top: 0, behavior: 'instant' }); await new Promise(requestAnimationFrame); return 'ok'; } } await new Promise((r) => setTimeout(r, 50)); } throw new Error('PDF covers were not ready for the screenshot'); })()",
+		"wait": 1500
+	},
+	{
 		"feature": "pdf-files",
 		"caption": "A base of PDF files: each PDF is its own cover.",
 		"note": "PDF files.base",

@@ -52,6 +52,12 @@
 	box-shadow: var(--shadow-s);
 }
 
+.pdf-cover-card-open-pdf {
+	margin: var(--size-2-2) var(--size-2-3);
+	align-self: flex-start;
+	font-size: var(--font-ui-smaller);
+}
+
 .pdf-cover-card-cover {
 	position: relative;
 	aspect-ratio: 1 / var(--pdf-cover-cards-aspect, 1.414);

@@ -1,7 +1,7 @@
 {
 	"id": "pdf-cover-cards",
 	"name": "PDF Cover Cards",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"minAppVersion": "1.13.4",
 	"description": "Shows the first page, or a chosen page, of the PDF linked from each note as the card cover in a Bases view.",
 	"author": "Michael Lip",

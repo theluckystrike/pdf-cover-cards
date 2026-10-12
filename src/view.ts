@@ -1,4 +1,4 @@
-import { BasesView, Keymap, Notice, TFile, setIcon, type BasesAllOptions, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
+import { BasesView, Keymap, Notice, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
 import { chooseCover, coverSlots, pagesLabel, type CoverChoice, type Crop } from './cover';
 import { FREE_MAX_COVERS, isPro, onProChange } from './pro';
 import type PdfCoverCardsPlugin from './main';
@@ -8,11 +8,38 @@ const DEFAULT_WIDTH = 180;
 /** A4 portrait: the placeholder shape before a cover is drawn. */
 const PLACEHOLDER_ASPECT = 1.414;
 
+/** Subpath that opens a PDF at the page of a choice, for example `#page=3`. */
+export function pdfSubpath(choice: CoverChoice): string {
+	return `#page=${choice.page}`;
+}
+
+/** Opens the PDF of a choice at its page. Opens the file by path, so a `#` in the file name does not break the link. */
+export async function openPdfAt(app: App, choice: CoverChoice, newLeaf: PaneType | boolean): Promise<void> {
+	const pdf = app.vault.getFileByPath(choice.path);
+	if (!pdf) return;
+	await app.workspace.getLeaf(newLeaf).openFile(pdf, { eState: { subpath: pdfSubpath(choice) } });
+}
+
+/** Adds the "Open at page N" button. Its click and its Enter key stay on the button, so the card does not also open the note. */
+export function openPdfButton(parent: HTMLElement, choice: CoverChoice, open: (choice: CoverChoice, newLeaf: PaneType | boolean) => void): HTMLButtonElement {
+	const button = parent.createEl('button', { cls: 'pdf-cover-card-open-pdf', text: `Open at page ${choice.page}` });
+	button.addEventListener('keydown', (evt) => {
+		if (evt.key === 'Enter') evt.stopPropagation();
+	});
+	button.addEventListener('click', (evt) => {
+		evt.stopPropagation();
+		open(choice, Keymap.isModEvent(evt));
+	});
+	return button;
+}
+
 /** One card as drawn: its note, its cover choice and the element that holds the cover. */
 export interface CardState {
 	file: TFile;
 	choice: CoverChoice | null;
 	coverEl: HTMLElement;
+	/** The "Open at page N" button, when the card has a PDF. */
+	openEl?: HTMLButtonElement;
 	/** True when this card is within the cover limit. */
 	slot: boolean;
 	/** drawn, empty (no PDF), locked (free limit), error, or waiting. */
@@ -195,6 +222,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		card.addEventListener('keydown', (evt) => {
 			if (evt.key === 'Enter') open(evt);
 		});
+		if (choice) state.openEl = openPdfButton(body, choice, (c, newLeaf) => void openPdfAt(this.app, c, newLeaf));
 		card.addEventListener('mouseover', (event) => {
 			this.app.workspace.trigger('hover-link', { event, source: VIEW_ID, hoverParent: this, targetEl: card, linktext: file.path, sourcePath: '' });
 		});
@@ -212,11 +240,13 @@ export class PdfCoverView extends BasesView implements HoverParent {
 
 	/** Draws (or loads) the cover of one card into its cover element. */
 	async fill(card: CardState, run: number, opts: ReturnType<PdfCoverView['options']>): Promise<void> {
+		if (run !== this.token || card.status !== 'waiting') return;
 		const pdf = card.choice ? this.app.vault.getFileByPath(card.choice.path) : null;
 		if (!pdf || !card.choice) return;
 		try {
 			const cover = await this.plugin.renderer.cover({ file: pdf, page: card.choice.page, width: opts.width, crop: opts.crop, disk: isPro() && this.plugin.settings.saveCovers });
-			if (run !== this.token) return;
+			// The observer and fillAll can await the same render. Only the first completion adds an image.
+			if (run !== this.token || card.status !== 'waiting') return;
 			const url = URL.createObjectURL(cover.blob);
 			this.urls.push(url);
 			card.coverEl.removeClass('is-loading');
@@ -226,8 +256,13 @@ export class PdfCoverView extends BasesView implements HoverParent {
 			card.status = 'drawn';
 			card.aspect = cover.aspect;
 			card.pages = cover.pages;
+			// The renderer clamps the page to the page count, so the button opens the page that the cover shows.
+			if (cover.page !== card.choice.page) {
+				card.choice.page = cover.page;
+				card.openEl?.setText(`Open at page ${cover.page}`);
+			}
 		} catch (e) {
-			if (run !== this.token) return;
+			if (run !== this.token || card.status !== 'waiting') return;
 			card.status = 'error';
 			card.coverEl.removeClass('is-loading');
 			card.coverEl.addClass('is-placeholder');
