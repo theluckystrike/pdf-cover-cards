@@ -1,7 +1,7 @@
 import { Notice, Plugin, normalizePath, type TFile } from 'obsidian';
 import type { SponsorsManager } from './license/index';
 import { createGitHubSponsors } from './license/github-obsidian';
-import { sheetLayout } from './cover';
+import { sheetLayout, sheetParts } from './cover';
 import { SPONSORS, bindPro, isPro, resetPro } from './pro';
 import { CoverRenderer } from './render';
 import { DEFAULT_SETTINGS, PdfCoverCardsSettingTab, normalizeSettings, type PdfCoverCardsSettings } from './settings';
@@ -9,8 +9,11 @@ import { PdfCoverView, VIEW_ID, viewOptions } from './view';
 
 /** How often to ask the license state whether a check is due. It sends a request only when signed in and due (7 days). */
 const PRO_TICK_MS = 6 * 60 * 60 * 1000;
-/** Contact sheet: cell width, gap and title line in pixels, and covers per row. */
-const SHEET = { cell: 240, gap: 24, title: 36, columns: 5 };
+/**
+ * Contact sheet: cell width, gap and title line in pixels, covers per row, and the largest sheet height. A taller
+ * view goes on more sheets: 12,000 x 1,344 pixels stays within the canvas area limit of iOS (4096 x 4096).
+ */
+const SHEET = { cell: 240, gap: 24, title: 36, columns: 5, maxHeight: 12000 };
 
 export default class PdfCoverCardsPlugin extends Plugin {
 	settings: PdfCoverCardsSettings = { ...DEFAULT_SETTINGS };
@@ -108,7 +111,10 @@ export default class PdfCoverCardsPlugin extends Plugin {
 		return open.find((v) => v.isActive()) ?? open[open.length - 1] ?? null;
 	}
 
-	/** Pro: draws every cover of the view on one PNG image with the card titles, saves it in the vault and opens it. */
+	/**
+	 * Pro: draws the drawn covers of the view on a PNG image with the card titles, saves it in the vault and opens it.
+	 * A large view goes on more than one image. Gives the first image.
+	 */
 	async exportSheet(view: PdfCoverView): Promise<TFile | null> {
 		if (!isPro()) {
 			PdfCoverView.needsPro('The contact sheet export');
@@ -120,49 +126,65 @@ export default class PdfCoverCardsPlugin extends Plugin {
 			new Notice('No covers to export in this view.');
 			return null;
 		}
-		const layout = sheetLayout(
-			cards.map((c) => c.aspect),
-			SHEET.columns,
-			SHEET.cell,
-			SHEET.gap,
-			SHEET.title,
-		);
-		const canvas = createEl('canvas');
-		canvas.width = layout.width;
-		canvas.height = layout.height;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return null;
-		ctx.fillStyle = '#ffffff';
-		ctx.fillRect(0, 0, layout.width, layout.height);
-		ctx.font = '600 15px sans-serif';
-		ctx.textBaseline = 'alphabetic';
-		for (let i = 0; i < cards.length; i++) {
-			const card = cards[i]!;
-			const cell = layout.cells[i]!;
-			const img = card.coverEl.querySelector('img');
-			if (!img) continue;
-			await img.decode();
-			ctx.drawImage(img, cell.x, cell.y, SHEET.cell, cell.coverHeight);
-			ctx.strokeStyle = '#d0d0d0';
-			ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, SHEET.cell - 1, cell.coverHeight - 1);
-			ctx.fillStyle = '#222222';
-			ctx.fillText(fitText(ctx, card.file.extension === 'md' ? card.file.basename : card.file.name, SHEET.cell), cell.x, cell.titleY);
-		}
-		const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
-		if (!blob) return null;
 		const now = new Date();
 		const pad = (n: number): string => String(n).padStart(2, '0');
 		const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}${pad(now.getMinutes())}`;
-		const title = `${view.name.replace(/[\\/:*?"<>|#^[\]]/g, ' ').trim()} covers ${stamp}`;
+		const title = `${view.name.replace(/[\\/:*?"<>|#^[\]]/g, ' ').trim()} covers ${stamp}`.trim();
 		const folder = this.app.fileManager.getNewFileParent('');
-		const base = normalizePath(`${folder.path === '/' ? '' : folder.path + '/'}${title}`);
-		let path = `${base}.png`;
-		for (let n = 2; this.app.vault.getAbstractFileByPath(path) && n < 1000; n++) path = `${base} ${n}.png`;
-		const file = await this.app.vault.createBinary(path, await blob.arrayBuffer());
-		new Notice(`Exported ${cards.length} covers to ${file.path}`);
+		const aspects = cards.map((c) => c.aspect);
+		const parts = sheetParts(aspects, SHEET.columns, SHEET.cell, SHEET.gap, SHEET.title, SHEET.maxHeight);
+		const files: TFile[] = [];
+		for (let k = 0; k < parts.length; k++) {
+			const [start, end] = parts[k]!;
+			const blob = await drawSheet(cards.slice(start, end), aspects.slice(start, end));
+			if (!blob) {
+				new Notice('The contact sheet could not be drawn.');
+				break;
+			}
+			const name = parts.length > 1 ? `${title} part ${k + 1} of ${parts.length}` : title;
+			const base = normalizePath(`${folder.path === '/' ? '' : folder.path + '/'}${name}`);
+			let path = `${base}.png`;
+			for (let n = 2; this.app.vault.getAbstractFileByPath(path) && n < 1000; n++) path = `${base} ${n}.png`;
+			files.push(await this.app.vault.createBinary(path, await blob.arrayBuffer()));
+		}
+		const file = files[0];
+		if (!file) return null;
+		new Notice(files.length > 1 ? `Exported ${cards.length} covers to ${files.length} contact sheets in ${folder.path}` : `Exported ${cards.length} covers to ${file.path}`);
 		await this.app.workspace.getLeaf('tab').openFile(file);
 		return file;
 	}
+}
+
+/** Draws the covers of `cards` on one PNG contact sheet with their titles. Null when the canvas gives no image. */
+async function drawSheet(cards: PdfCoverView['cards'], aspects: number[]): Promise<Blob | null> {
+	const layout = sheetLayout(aspects, SHEET.columns, SHEET.cell, SHEET.gap, SHEET.title);
+	const canvas = createEl('canvas');
+	canvas.width = layout.width;
+	canvas.height = layout.height;
+	const ctx = canvas.getContext('2d');
+	if (!ctx) return null;
+	ctx.fillStyle = '#ffffff';
+	ctx.fillRect(0, 0, layout.width, layout.height);
+	ctx.font = '600 15px sans-serif';
+	ctx.textBaseline = 'alphabetic';
+	for (let i = 0; i < cards.length; i++) {
+		const card = cards[i]!;
+		const cell = layout.cells[i]!;
+		const img = card.coverEl.querySelector('img');
+		if (!img) continue;
+		try {
+			await img.decode();
+		} catch {
+			// The view drew again during the export and its old image is gone. Leave this cell empty.
+			continue;
+		}
+		ctx.drawImage(img, cell.x, cell.y, SHEET.cell, cell.coverHeight);
+		ctx.strokeStyle = '#d0d0d0';
+		ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, SHEET.cell - 1, cell.coverHeight - 1);
+		ctx.fillStyle = '#222222';
+		ctx.fillText(fitText(ctx, card.file.extension === 'md' ? card.file.basename : card.file.name, SHEET.cell), cell.x, cell.titleY);
+	}
+	return new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
 }
 
 /** Cuts text with an ellipsis so it fits `width` pixels in the current canvas font. */

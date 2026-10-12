@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.1.1
+
+### Patch Changes
+
+- adaf3db: A saved cover that cannot be read or written no longer shows an error on its card, and a large contact sheet export goes on more than one image instead of failing with no message.
+
 ## 1.1.0
 
 ### Minor Changes

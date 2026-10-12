@@ -50,7 +50,7 @@ Show only the top half or the top third of the page. For papers and reports, the
 
 ### Contact sheet export (Pro)
 
-Export every cover of the view to one PNG image, with the note name under each picture. The image goes into the folder for new files. Use the button above the cards or the command "Export the covers of this view as a contact sheet".
+Export the drawn covers of the view to a PNG image, with the note name under each picture. A view with more than about 150 covers goes on more than one image. The images go into the folder for new files. Use the button above the cards or the command "Export the covers of this view as a contact sheet".
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/contact-sheet.png" alt="An exported PNG with twelve covers in a grid and the titles under them" width="720">
 
@@ -67,7 +67,7 @@ Export every cover of the view to one PNG image, with the note name under each p
 3. Open the view options. In "PDF property", choose the property that holds the link to the PDF.
 4. Use "Properties" in the base toolbar to choose the properties that show under the title.
 
-The plugin draws a cover only when the card comes near the screen, and at most two PDFs at the same time, so a large base stays smooth while you scroll. With Pro, the drawn covers are saved as small JPEG files in the plugin folder, and the base shows them at once the next time.
+The plugin draws a cover only when the card comes near the screen, and by default at most two PDFs at the same time, so a large base stays smooth while you scroll. With Pro, the drawn covers are saved as small JPEG files in the plugin folder, and the base shows them at once the next time.
 
 ## Pro
 

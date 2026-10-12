@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LruCache, MAX_AREA, MAX_SIDE, cacheKey, chooseCover, coverBox, coverFileName, coverSlots, cropShare, fnv1a, pageOf, pagesLabel, sheetLayout, type CoverInput } from '../src/cover';
+import { LruCache, MAX_AREA, MAX_SIDE, cacheKey, chooseCover, coverBox, coverFileName, coverSlots, cropShare, fnv1a, pageOf, pagesLabel, sheetLayout, sheetParts, type CoverInput } from '../src/cover';
 
 const files = new Set(['Papers/Attention.pdf', 'Papers/Notes.pdf', 'Scans/Book scan.pdf', 'cover.png', 'Papers/Other.md']);
 /** Resolves a link path the way the vault does for these tests: exact path, or a unique file name. */
@@ -170,6 +170,31 @@ describe('sheetLayout', () => {
 		expect(l.width).toBe(100);
 		expect(l.cells[0]!.coverHeight).toBe(141);
 		expect(() => sheetLayout([1], 0, 100, 0, 0)).toThrow();
+	});
+});
+
+describe('sheetParts', () => {
+	it('keeps a small view on one sheet', () => {
+		expect(sheetParts([1.414, 1.414, 1.414], 5, 240, 24, 36, 12000)).toEqual([[0, 3]]);
+		expect(sheetParts([], 5, 240, 24, 36, 12000)).toEqual([]);
+	});
+
+	it('splits a large view into sheets of whole rows that stay within the height limit', () => {
+		const aspects = Array.from({ length: 1000 }, () => 1.414);
+		const parts = sheetParts(aspects, 5, 240, 24, 36, 12000);
+		expect(parts.length).toBeGreaterThan(1);
+		expect(parts[0]![0]).toBe(0);
+		expect(parts[parts.length - 1]![1]).toBe(1000);
+		for (let i = 0; i < parts.length; i++) {
+			const [start, end] = parts[i]!;
+			if (i > 0) expect(start).toBe(parts[i - 1]![1]);
+			if (end < 1000) expect((end - start) % 5).toBe(0);
+			expect(sheetLayout(aspects.slice(start, end), 5, 240, 24, 36).height).toBeLessThanOrEqual(12000);
+		}
+	});
+
+	it('gives a row that is taller than the limit a sheet of its own', () => {
+		expect(sheetParts([1, 100, 1], 1, 240, 24, 36, 12000)).toEqual([[0, 1], [1, 2], [2, 3]]);
 	});
 });
 

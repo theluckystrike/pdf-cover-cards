@@ -88,22 +88,43 @@ export class CoverRenderer {
 		const name = normalizePath(`${this.diskFolder}/${coverFileName(key)}`);
 		const meta = `${name}.json`;
 		const adapter = this.app.vault.adapter;
-		if (r.disk && (await adapter.exists(name)) && (await adapter.exists(meta))) {
-			const info = JSON.parse(await adapter.read(meta)) as { page: number; pages: number; aspect: number };
-			const blob = new Blob([await adapter.readBinary(name)], { type: 'image/jpeg' });
-			const cover: Cover = { blob, page: info.page, pages: info.pages, aspect: info.aspect };
-			this.memory.set(key, cover, blob.size);
-			this.fromDisk++;
-			return cover;
+		if (r.disk) {
+			const saved = await this.readSaved(name, meta);
+			if (saved) {
+				this.memory.set(key, saved, saved.blob.size);
+				this.fromDisk++;
+				return saved;
+			}
 		}
 		const cover = await this.slot(() => this.draw(r));
 		this.memory.set(key, cover, cover.blob.size);
 		if (r.disk) {
-			if (!(await adapter.exists(this.diskFolder))) await adapter.mkdir(this.diskFolder);
-			await adapter.writeBinary(name, await cover.blob.arrayBuffer());
-			await adapter.write(meta, JSON.stringify({ page: cover.page, pages: cover.pages, aspect: cover.aspect }));
+			// A failed save (disk full, read-only folder) must not turn a drawn cover into an error on the card.
+			try {
+				if (!(await adapter.exists(this.diskFolder))) await adapter.mkdir(this.diskFolder);
+				await adapter.writeBinary(name, await cover.blob.arrayBuffer());
+				await adapter.write(meta, JSON.stringify({ page: cover.page, pages: cover.pages, aspect: cover.aspect }));
+			} catch (e) {
+				console.warn(`PDF Cover Cards: could not save the cover of ${r.file.path}`, e);
+			}
 		}
 		return cover;
+	}
+
+	/** A saved cover, or null when it is missing or its files are damaged (then the caller draws it again). */
+	private async readSaved(name: string, meta: string): Promise<Cover | null> {
+		const adapter = this.app.vault.adapter;
+		try {
+			if (!(await adapter.exists(name)) || !(await adapter.exists(meta))) return null;
+			const info = JSON.parse(await adapter.read(meta)) as Partial<Record<'page' | 'pages' | 'aspect', unknown>>;
+			const { page, pages, aspect } = info;
+			if (typeof page !== 'number' || typeof pages !== 'number' || typeof aspect !== 'number' || !(aspect > 0)) return null;
+			const blob = new Blob([await adapter.readBinary(name)], { type: 'image/jpeg' });
+			return blob.size > 0 ? { blob, page, pages, aspect } : null;
+		} catch (e) {
+			console.warn(`PDF Cover Cards: could not read the saved cover ${name}`, e);
+			return null;
+		}
 	}
 
 	/** Runs fn when fewer than `parallel` draws are running. */

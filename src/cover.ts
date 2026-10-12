@@ -230,6 +230,29 @@ export function sheetLayout(aspects: number[], columns: number, cell: number, ga
 	return { width: gap + cols * (cell + gap), height: Math.max(y, gap * 2), cells };
 }
 
+/**
+ * Splits a contact sheet into parts of whole rows, each at most `maxHeight` px tall in sheetLayout, because a
+ * canvas that is too tall gives no image. A row taller than the limit gets a part of its own. Gives [start, end)
+ * index ranges into `aspects`.
+ */
+export function sheetParts(aspects: number[], columns: number, cell: number, gap: number, titleHeight: number, maxHeight: number): [number, number][] {
+	const cols = Math.min(Math.floor(columns), Math.max(1, aspects.length));
+	const parts: [number, number][] = [];
+	let start = 0;
+	let y = gap;
+	for (let row = 0; row < aspects.length; row += cols) {
+		const add = sheetLayout(aspects.slice(row, row + cols), cols, cell, gap, titleHeight).height - gap;
+		if (row > start && y + add > maxHeight) {
+			parts.push([start, row]);
+			start = row;
+			y = gap;
+		}
+		y += add;
+	}
+	if (aspects.length > start) parts.push([start, aspects.length]);
+	return parts;
+}
+
 /** "1 page" or "12 pages". */
 export function pagesLabel(n: number): string {
 	return `${n} ${n === 1 ? 'page' : 'pages'}`;
