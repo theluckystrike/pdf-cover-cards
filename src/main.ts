@@ -28,7 +28,7 @@ export default class PdfCoverCardsPlugin extends Plugin {
 		await this.loadSettings();
 		this.renderer = new CoverRenderer(this.app, this.manifest.dir ?? normalizePath(`${this.app.vault.configDir}/plugins/${this.manifest.id}`), () => this.settings);
 		// No request here: a request needs a GitHub sign in first (Settings, Pro, Sign in with GitHub).
-		const pro = createGitHubSponsors(this.app, this.manifest.id, SPONSORS);
+		const pro = createGitHubSponsors(this.app, this.manifest.id, SPONSORS, this);
 		pro.init();
 		this.pro = pro;
 		bindPro(pro);
