@@ -1,5 +1,17 @@
 # pdf-cover-cards
 
+## 1.2.0
+
+### Minor Changes
+
+- 8c4430d: Browse pages on drawn PDF cards. Preserve literal percent signs in vault paths. Read Markdown PDF links with Unicode, spaces and parentheses. Reject nonfinite page sizes.
+
+## 1.1.3
+
+### Patch Changes
+
+- b0b08cb: Recover corrupt saved covers from the PDF and wait for image decoding before marking cards drawn.
+
 ## 1.1.2
 
 ### Patch Changes

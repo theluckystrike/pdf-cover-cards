@@ -5,6 +5,26 @@
  "note": "args = [property value as text]; expected = {path, page} of the PDF to draw, or null when the value is not a PDF link. Page defaults to 1.",
  "cases": [
   {
+   "name": "literal percent sequence in a wiki path",
+   "args": [
+    "[[資料/100%20real.pdf]]"
+   ],
+   "expected": {
+    "path": "資料/100%20real.pdf",
+    "page": 1
+   }
+  },
+  {
+   "name": "Unicode angle destination with parentheses",
+   "args": [
+    "[paper](<資料/Mon%20été%20(1).pdf#page=2>)"
+   ],
+   "expected": {
+    "path": "資料/Mon été (1).pdf",
+    "page": 2
+   }
+  },
+  {
    "name": "wikilink",
    "args": [
     "[[Papers/Attention.pdf]]"

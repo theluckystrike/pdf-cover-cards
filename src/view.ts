@@ -1,5 +1,6 @@
 import { BasesView, Keymap, Notice, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
 import { chooseCover, coverSlots, pagesLabel, type CoverChoice, type Crop } from './cover';
+import { coverImage } from './image';
 import { FREE_MAX_COVERS, isPro, onProChange } from './pro';
 import type PdfCoverCardsPlugin from './main';
 
@@ -40,6 +41,7 @@ export interface CardState {
 	coverEl: HTMLElement;
 	/** The "Open at page N" button, when the card has a PDF. */
 	openEl?: HTMLButtonElement;
+	pageControls?: HTMLElement;
 	/** True when this card is within the cover limit. */
 	slot: boolean;
 	/** drawn, empty (no PDF), locked (free limit), error, or waiting. */
@@ -247,11 +249,18 @@ export class PdfCoverView extends BasesView implements HoverParent {
 			const cover = await this.plugin.renderer.cover({ file: pdf, page: card.choice.page, width: opts.width, crop: opts.crop, disk: isPro() && this.plugin.settings.saveCovers });
 			// The observer and fillAll can await the same render. Only the first completion adds an image.
 			if (run !== this.token || card.status !== 'waiting') return;
-			const url = URL.createObjectURL(cover.blob);
+			const { image, url } = await coverImage(cover.blob);
+			// Decode can finish after a redraw, unload, or a second fill of the same card.
+			if (run !== this.token || card.status !== 'waiting') {
+				URL.revokeObjectURL(url);
+				return;
+			}
 			this.urls.push(url);
 			card.coverEl.removeClass('is-loading');
 			card.coverEl.style.setProperty('--pdf-cover-cards-aspect', String(cover.aspect));
-			card.coverEl.createEl('img', { attr: { src: url, alt: `Page ${cover.page} of ${pdf.name}`, draggable: 'false' } });
+			image.alt = `Page ${cover.page} of ${pdf.name}`;
+			image.draggable = false;
+			card.coverEl.appendChild(image);
 			card.coverEl.createSpan({ cls: 'pdf-cover-card-pages', text: pagesLabel(cover.pages) });
 			card.status = 'drawn';
 			card.aspect = cover.aspect;
@@ -261,6 +270,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 				card.choice.page = cover.page;
 				card.openEl?.setText(`Open at page ${cover.page}`);
 			}
+			this.drawPageControls(card);
 		} catch (e) {
 			if (run !== this.token || card.status !== 'waiting') return;
 			card.status = 'error';
@@ -270,6 +280,41 @@ export class PdfCoverView extends BasesView implements HoverParent {
 			card.coverEl.createDiv({ cls: 'pdf-cover-card-note', text: 'This PDF could not be read' });
 			console.warn(`PDF Cover Cards: ${pdf.path}`, e);
 		}
+	}
+
+	/** Browse a drawn card without changing its source note or PDF. */
+	private drawPageControls(card: CardState): void {
+		card.pageControls?.remove();
+		if (card.pages < 2 || !card.openEl?.parentElement || !card.choice) return;
+		const controls = card.openEl.parentElement.createDiv({ cls: 'pdf-cover-card-navigation' });
+		card.pageControls = controls;
+		for (const [step, label] of [[-1, 'Previous page'], [1, 'Next page']] as const) {
+			const button = controls.createEl('button', { text: label, attr: { type: 'button' } });
+			button.disabled = step < 0 ? card.choice.page <= 1 : card.choice.page >= card.pages;
+			button.addEventListener('keydown', (event) => { if (event.key === 'Enter') event.stopPropagation(); });
+			button.addEventListener('click', (event) => {
+				event.stopPropagation();
+				void this.changePage(card, step);
+			});
+		}
+	}
+
+	async changePage(card: CardState, step: number): Promise<void> {
+		if (!this.cards.includes(card) || !card.slot || card.status !== 'drawn' || !card.choice) return;
+		const page = card.choice.page + step;
+		if (!Number.isInteger(page) || page < 1 || page > card.pages || page === card.choice.page) return;
+		const image = card.coverEl.querySelector('img');
+		if (image) {
+			URL.revokeObjectURL(image.src);
+			this.urls = this.urls.filter(url => url !== image.src);
+		}
+		card.coverEl.empty();
+		card.coverEl.addClass('is-loading');
+		card.choice.page = page;
+		card.openEl?.setText(`Open at page ${page}`);
+		card.status = 'waiting';
+		card.pageControls?.querySelectorAll('button').forEach(button => { button.disabled = true; });
+		await this.fill(card, this.token, this.options());
 	}
 
 	/** Draws every cover within the limit, also those off screen (contact sheet export). */

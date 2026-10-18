@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { browser, expect } from '@wdio/globals';
 import { obsidianPage } from 'wdio-obsidian-service';
 import { pluginId, reloadPlugin } from './load';
@@ -127,6 +129,22 @@ describe(`${pluginId} in the real app`, function () {
 	it('is enabled and reloads with no console errors', async function () {
 		const state = await reloadPlugin(pluginId);
 		expect(state).toEqual({ enabled: true, reloaded: true, errors: [] });
+	});
+
+	it('runs the exact candidate bytes in the requested app version', async function () {
+		const sha = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
+		const installed = await browser.executeObsidian(async ({ app, obsidian }, id) => {
+			const p = (app as unknown as { plugins: { plugins: Record<string, { manifest: { dir: string; version: string } }> } }).plugins.plugins[id]!;
+			const hashes: Record<string, string> = {};
+			for (const name of ['main.js', 'manifest.json', 'styles.css']) {
+				const data = await app.vault.adapter.readBinary(`${p.manifest.dir}/${name}`);
+				hashes[name] = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), (x) => x.toString(16).padStart(2, '0')).join('');
+			}
+			return { appVersion: obsidian.apiVersion, pluginVersion: p.manifest.version, hashes };
+		}, pluginId);
+		for (const name of ['main.js', 'manifest.json', 'styles.css']) expect(installed.hashes[name]).toBe(sha(name));
+		expect(installed.appVersion).toBe(browser.getObsidianVersion());
+		console.log(`candidate app binding: ${JSON.stringify({ ...installed, packageLockSha256: existsSync('package-lock.json') ? sha('package-lock.json') : null })}`);
 	});
 
 	it('registers the view through the public Bases API', async function () {
@@ -371,6 +389,69 @@ describe(`${pluginId} in the real app`, function () {
 		expect(disk.after).toBe(0);
 		await setPro(false);
 		await waitFor((x) => !x.exportButton && x.cards.filter((c) => c.status === 'locked').length === 10, 'free again');
+	});
+
+	it('recovers a nonempty corrupt JPEG on an actual card and keeps valid caches', async function () {
+		await setPro(true);
+		try {
+			await browser.executeObsidian(async ({ app }) => {
+				await app.vault.create('Cache recovery.base', 'filters:\n  and:\n    - file.path == "Library/PDFs/Field Guide to Mosses.pdf"\nviews:\n  - type: pdf-cover-cards\n    name: Cache recovery\n    cardWidth: 173\n');
+			});
+			await obsidianPage.openFile('Cache recovery.base');
+			await waitFor((x) => x.cards.length === 1, 'one native PDF card');
+			await fillAll();
+			const receipt = await browser.executeObsidian(async ({ app }, id) => {
+				interface Cover { blob: Blob; page: number; pages: number; aspect: number }
+				interface V { cards: { status: string; coverEl: HTMLElement }[]; draw(): void; fillAll(): Promise<void> }
+				interface R { drawn: number; fromDisk: number; diskFolder: string; memory: { clear(): void; bytes: number }; clear(): Promise<number> }
+				const p = (app as unknown as { plugins: { plugins: Record<string, { renderer: R; targetView(): V; settings: { saveCovers: boolean } }> } }).plugins.plugins[id]!;
+				const r = p.renderer;
+				const v = p.targetView();
+				p.settings.saveCovers = true;
+				await r.clear();
+				v.draw(); await v.fillAll();
+				const adapter = app.vault.adapter;
+				const jpeg = (await adapter.list(r.diskFolder)).files.find((x) => x.endsWith('.jpg'))!;
+				const original = Array.from(new Uint8Array(await adapter.readBinary(jpeg)));
+				const pdf = app.vault.getFileByPath('Library/PDFs/Field Guide to Mosses.pdf')!;
+				const sourceBefore = Array.from(new Uint8Array(await app.vault.readBinary(pdf)));
+				await adapter.writeBinary(jpeg, new TextEncoder().encode('nonempty invalid cached JPEG').buffer);
+				r.memory.clear();
+				const before = r.drawn;
+				v.draw(); await Promise.all([v.fillAll(), v.fillAll()]);
+				const recovered = r.drawn - before;
+				const image = v.cards[0]!.coverEl.querySelector('img')!;
+				await image.decode();
+				const repaired = Array.from(new Uint8Array(await adapter.readBinary(jpeg)));
+				const status = v.cards[0]!.status;
+				const dimensions = [image.naturalWidth, image.naturalHeight];
+				const images = v.cards[0]!.coverEl.querySelectorAll('img').length;
+				const memoryBytes = r.memory.bytes;
+				const diskBefore = r.fromDisk;
+				for (let n = 0; n < 3; n++) { r.memory.clear(); v.draw(); await v.fillAll(); }
+				const validDiskHits = r.fromDisk - diskBefore;
+				// Reopen/redraw from memory too: no extra PDF renders.
+				v.draw(); await v.fillAll();
+				const sourceAfter = Array.from(new Uint8Array(await app.vault.readBinary(pdf)));
+				return { recovered, finalDraws: r.drawn - before, status, dimensions, images, memoryBytes,
+					validDiskHits, savedMatchesOriginal: JSON.stringify(repaired) === JSON.stringify(original),
+					sourceUnchanged: JSON.stringify(sourceBefore) === JSON.stringify(sourceAfter),
+					metadata: JSON.parse(await adapter.read(`${jpeg}.json`)) as Omit<Cover, 'blob'> };
+			}, pluginId);
+			console.log(`native corrupt-cache receipt: ${JSON.stringify(receipt)}`);
+			expect(receipt.recovered).toBe(1);
+			expect(receipt.finalDraws).toBe(1);
+			expect(receipt.status).toBe('drawn');
+			expect(receipt.dimensions.every((n) => n > 0)).toBe(true);
+			expect(receipt.images).toBe(1);
+			expect(receipt.memoryBytes).toBeGreaterThan(0);
+			expect(receipt.validDiskHits).toBe(3);
+			expect(receipt.savedMatchesOriginal).toBe(true);
+			expect(receipt.sourceUnchanged).toBe(true);
+			expect(receipt.metadata.pages).toBe(4);
+		} finally {
+			await setPro(false);
+		}
 	});
 
 	it('draws the first 30 covers of 200 notes and keeps the other 170 locked', async function () {

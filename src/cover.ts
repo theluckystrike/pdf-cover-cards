@@ -15,12 +15,12 @@ export interface CoverChoice extends CoverTarget {
 export type Crop = 'page' | 'top-half' | 'top-third';
 
 const WIKI = /^!?\[\[([^\]|#]+)(#[^\]|]*)?(\|[^\]]*)?\]\]$/;
-const MD = /^!?\[[^\]]*\]\(<?([^)>#]+)(#[^)>]*)?>?\)$/;
+const MD = /^!?\[[^\]]*\]\((?:<([^>]+)>|([^\s]+))\)$/;
 const PAGE = /(?:^|[#&])page=(\d+)/;
 
 function safeDecode(s: string): string {
 	try {
-		return decodeURI(s);
+		return decodeURIComponent(s);
 	} catch {
 		return s;
 	}
@@ -38,11 +38,14 @@ export function pageOf(subpath: string): number {
  */
 export function coverTarget(raw: string): CoverTarget | null {
 	const text = raw.trim();
-	const m = WIKI.exec(text) ?? MD.exec(text);
-	const path = (m ? m[1] : text.split('#')[0])?.trim() ?? '';
-	const hash = m ? (m[2] ?? '') : text.includes('#') ? text.slice(text.indexOf('#')) : '';
+	const wiki = WIKI.exec(text);
+	const md = wiki ? null : MD.exec(text);
+	const destination = md ? (md[1] ?? md[2] ?? '') : text;
+	const path = (wiki ? wiki[1] : destination.split('#')[0])?.trim() ?? '';
+	const hash = wiki ? (wiki[2] ?? '') : destination.includes('#') ? destination.slice(destination.indexOf('#')) : '';
 	if (!/\.pdf$/i.test(path)) return null;
-	return { path: safeDecode(path), page: pageOf(hash) };
+	// Wiki links and metadata-cache links already contain literal vault paths.
+	return { path: md ? safeDecode(path) : path, page: pageOf(hash) };
 }
 
 /** What chooseCover needs to know about one base entry. */
@@ -109,7 +112,7 @@ export const MAX_AREA = 2048 * 2048;
  * The pixel ratio is clamped to 1..3; the result keeps the page aspect and stays within MAX_SIDE and MAX_AREA.
  */
 export function coverBox(page: { width: number; height: number }, cssWidth: number, pixelRatio: number, crop: Crop): CoverBox {
-	if (!(page.width > 0 && page.height > 0)) throw new Error('page size must be positive');
+	if (!(page.width > 0 && page.height > 0 && Number.isFinite(page.width) && Number.isFinite(page.height))) throw new Error('page size must be finite and positive');
 	if (!(cssWidth > 0)) throw new Error('cssWidth must be positive');
 	const ratio = Math.min(3, Math.max(1, Number.isFinite(pixelRatio) ? pixelRatio : 1));
 	let scale = (cssWidth * ratio) / page.width;

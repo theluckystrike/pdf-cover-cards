@@ -3,7 +3,7 @@
 		"feature": "shelf",
 		"caption": "Twelve notes about books, papers and manuals in one base. Each card shows page 1 of the PDF that the note links to, with the author and the year.",
 		"note": "Library.base",
-		"eval": "(async () => { app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
+		"eval": "(async () => { app.workspace.rightSplit.collapse(); app.plugins.plugins['pdf-cover-cards'].pro.signOut(); await new Promise((r) => setTimeout(r, 300)); await new Promise((r) => setTimeout(r, 800)); await app.plugins.plugins['pdf-cover-cards'].targetView()?.fillAll(); await new Promise((r) => setTimeout(r, 600)); return 'ok'; })()",
 		"wait": 900
 	},
 	{
@@ -20,6 +20,13 @@
 		"note": "Library.base",
 		"eval": "(async () => { const p = app.plugins.plugins['pdf-cover-cards']; p.pro.signOut(); const end = Date.now() + 10000; while (Date.now() < end) { const v = p.targetView(); if (v?.cards.length === 12) { await v.fillAll(); const images = [...v.containerEl.querySelectorAll('.pdf-cover-card-cover img')]; if (v.cards.every((c) => c.status === 'drawn') && images.length === 12) { await Promise.all(images.map((img) => img.decode())); v.containerEl.scrollTo({ top: 0, behavior: 'instant' }); await new Promise(requestAnimationFrame); return 'ok'; } } await new Promise((r) => setTimeout(r, 50)); } throw new Error('PDF covers were not ready for the screenshot'); })()",
 		"wait": 1500
+	},
+	{
+		"feature": "page-browsing",
+		"caption": "Preview page 2 of a PDF on its card. The open button follows the preview.",
+		"note": "Library.base",
+		"eval": "(async () => { const p = app.plugins.plugins['pdf-cover-cards']; p.pro.signOut(); await new Promise(r => setTimeout(r, 800)); const v = p.targetView(); await v.fillAll(); const c = v.cards.find(c => c.pages > 1 && c.status === 'drawn'); if (!c) throw new Error('No multi-page PDF card'); await v.changePage(c, 1); if (c.choice.page !== 2) throw new Error('Preview did not reach page 2'); c.coverEl.scrollIntoView({block:'center'}); return 'ok'; })()",
+		"wait": 900
 	},
 	{
 		"feature": "pdf-files",

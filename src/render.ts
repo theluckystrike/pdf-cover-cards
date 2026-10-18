@@ -1,6 +1,7 @@
 // Draws PDF pages to JPEG covers with the pdf.js build that ships with Obsidian (loadPdfJs). Covers are kept in a
 // memory cache and, with Pro, saved in the plugin folder. At most `parallel` PDFs are open at the same time.
 import { loadPdfJs, normalizePath, type App, type TFile } from 'obsidian';
+import { coverImage } from './image';
 import { LruCache, cacheKey, coverBox, coverFileName, type Crop } from './cover';
 
 /** The few pdf.js calls this plugin makes; loadPdfJs() is typed as any in obsidian.d.ts. */
@@ -45,6 +46,7 @@ const JPEG_QUALITY = 0.85;
 
 export class CoverRenderer {
 	readonly memory = new LruCache<Cover>(MEMORY_BUDGET);
+	private validated = new WeakSet<Cover>();
 	private pending = new Map<string, Promise<Cover>>();
 	private waiting: (() => void)[] = [];
 	private running = 0;
@@ -75,8 +77,6 @@ export class CoverRenderer {
 	/** The cover for a request: from memory, then from the saved covers (Pro), else drawn. Same requests share one draw. */
 	async cover(r: CoverRequest): Promise<Cover> {
 		const key = this.key(r);
-		const hit = this.memory.get(key);
-		if (hit) return hit;
 		const running = this.pending.get(key);
 		if (running) return running;
 		const job = this.load(r, key).finally(() => this.pending.delete(key));
@@ -88,7 +88,19 @@ export class CoverRenderer {
 		const name = normalizePath(`${this.diskFolder}/${coverFileName(key)}`);
 		const meta = `${name}.json`;
 		const adapter = this.app.vault.adapter;
-		if (r.disk) {
+		const hit = this.memory.get(key);
+		let damaged = false;
+		if (hit) {
+			try {
+				if (!this.validated.has(hit)) await this.validate(hit);
+				return hit;
+			} catch {
+				this.memory.delete(key);
+				await this.evict(name);
+				damaged = true;
+			}
+		}
+		if (r.disk && !damaged) {
 			const saved = await this.readSaved(name, meta);
 			if (saved) {
 				this.memory.set(key, saved, saved.blob.size);
@@ -97,6 +109,7 @@ export class CoverRenderer {
 			}
 		}
 		const cover = await this.slot(() => this.draw(r));
+		this.validated.add(cover);
 		this.memory.set(key, cover, cover.blob.size);
 		if (r.disk) {
 			// A failed save (disk full, read-only folder) must not turn a drawn cover into an error on the card.
@@ -115,15 +128,36 @@ export class CoverRenderer {
 	private async readSaved(name: string, meta: string): Promise<Cover | null> {
 		const adapter = this.app.vault.adapter;
 		try {
-			if (!(await adapter.exists(name)) || !(await adapter.exists(meta))) return null;
+			if (!(await adapter.exists(name)) && !(await adapter.exists(meta))) return null;
 			const info = JSON.parse(await adapter.read(meta)) as Partial<Record<'page' | 'pages' | 'aspect', unknown>>;
 			const { page, pages, aspect } = info;
-			if (typeof page !== 'number' || typeof pages !== 'number' || typeof aspect !== 'number' || !(aspect > 0)) return null;
+			if (typeof page !== 'number' || typeof pages !== 'number' || typeof aspect !== 'number' || !(aspect > 0)) throw new Error('Invalid cover metadata');
 			const blob = new Blob([await adapter.readBinary(name)], { type: 'image/jpeg' });
-			return blob.size > 0 ? { blob, page, pages, aspect } : null;
+			const cover = { blob, page, pages, aspect };
+			await this.validate(cover);
+			return cover;
 		} catch (e) {
 			console.warn(`PDF Cover Cards: could not read the saved cover ${name}`, e);
+			await this.evict(name);
 			return null;
+		}
+	}
+
+	private async validate(cover: Cover): Promise<void> {
+		const { url } = await coverImage(cover.blob);
+		URL.revokeObjectURL(url);
+		this.validated.add(cover);
+	}
+
+	/** Only generated files for this cache key; never the source PDF or other vault files. */
+	private async evict(name: string): Promise<void> {
+		const adapter = this.app.vault.adapter;
+		for (const path of [name, `${name}.json`]) {
+			try {
+				if (await adapter.exists(path)) await adapter.remove(path);
+			} catch (e) {
+				console.warn(`PDF Cover Cards: could not remove the damaged cover ${path}`, e);
+			}
 		}
 	}
 

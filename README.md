@@ -1,8 +1,8 @@
 # PDF Cover Cards
 
-PDF Cover Cards shows the first page of a PDF as the picture on a card. You keep one note for each book, paper, manual or scan, with a link to the PDF. The plugin draws page 1 of that PDF on the card, so a base of notes looks like a shelf of documents. You can also pick another page with `#page=N`.
+PDF Cover Cards shows a PDF page on a Bases card. Keep one note for each document, with a PDF link. The plugin draws page 1 as its cover. Pick another page with `#page=N`.
 
-PDF Cover Cards is a layout for the core Bases plugin. The base selects, filters and sorts the notes, and the plugin draws the cards with the PDF reader that comes with Obsidian.
+This layout uses core Bases to select, filter and sort notes. It draws PDF pages with the reader included in Obsidian.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/pdf-cover-cards.gif" alt="A library base shown as cards with PDF covers, then the PDF files as cards, then papers cropped to the top half" width="720">
 
@@ -29,6 +29,14 @@ Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]
 Each card with a PDF has an "Open at page N" button. The button opens the PDF of the cover at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab. Cards without a PDF have no button.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/open-at-page.png" alt="Library cards, each with an Open at page 1 button under the author and the year" width="720">
+
+### Browse PDF pages on a card
+
+Use "Previous page" or "Next page" to preview another page. The open button follows the preview. Controls appear on drawn PDFs with two or more pages. They stop at the first and last pages.
+
+Page browsing is free within the 30-cover limit. It does not change the PDF or the note. A view refresh restores the page from the PDF link.
+
+<img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/page-browsing.png" alt="A PDF card on page 2 with controls for the previous and next pages" width="720">
 
 ### PDF files as cards
 
@@ -67,13 +75,13 @@ Export the drawn covers of the view to a PNG image, with the note name under eac
 3. Open the view options. In "PDF property", choose the property that holds the link to the PDF.
 4. Use "Properties" in the base toolbar to choose the properties that show under the title.
 
-The plugin draws a cover only when the card comes near the screen, and by default at most two PDFs at the same time, so a large base stays smooth while you scroll. With Pro, the drawn covers are saved as small JPEG files in the plugin folder, and the base shows them at once the next time.
+The plugin draws covers near the screen, with at most two PDFs at a time by default. Pro saves JPEG covers in the plugin folder for reuse.
 
 ## Pro
 
 The free version draws the covers of the first 30 cards of a view that have a PDF. It includes the property and link rules, `#page=N`, PDF files as cards, the properties on the cards, embeds and live update. When a view has more cards with a PDF, a line above the cards says how many covers it did not draw.
 
-Pro draws covers on every card (the free version draws the first 30), crops covers to the top of the page, saves drawn covers so large bases open fast, and exports the covers as one PNG contact sheet. To get it:
+Pro draws covers on every card (the free version draws the first 30), crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
 
 1. Sponsor [theluckystrike on GitHub Sponsors](https://github.com/sponsors/theluckystrike) with $5 a month, or $15 once. A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
@@ -106,7 +114,7 @@ The plugin settings tab has the Pro section (sign in with GitHub, status and Ref
 
 ### Does PDF Cover Cards change my notes or my PDFs?
 
-No. It only reads them. The contact sheet export makes a new PNG file. Saved covers go into the plugin folder, not between your notes.
+No. It only reads them. The contact sheet export makes new PNG files. Saved covers go into the plugin folder, not between your notes.
 
 ### How is this different from the core Cards layout?
 

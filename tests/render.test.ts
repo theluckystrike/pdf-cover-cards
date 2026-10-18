@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from 'obsidian-test-mocks/obsidian';
+import { cacheKey } from '../src/cover';
 import { CoverRenderer, type Cover } from '../src/render';
 
 function setup() {
@@ -13,6 +14,57 @@ function setup() {
 }
 
 describe('saved covers', () => {
+	beforeEach(() => { vi.spyOn(HTMLImageElement.prototype, 'decode').mockResolvedValue(); });
+	afterEach(() => { vi.restoreAllMocks(); });
+
+	it('evicts nonempty corrupt saved bytes and shares one replacement draw', async () => {
+		const { app, renderer, draw, drawn, request } = setup();
+		await renderer.cover(request);
+		const jpeg = (await app.vault.adapter.list(renderer.diskFolder)).files.find((f) => f.endsWith('.jpg'))!;
+		await app.vault.adapter.writeBinary(jpeg, new TextEncoder().encode('not a JPEG').buffer);
+		renderer.memory.clear();
+		vi.mocked(HTMLImageElement.prototype.decode).mockRejectedValueOnce(new Error('invalid image'));
+		const remove = vi.spyOn(app.vault.adapter, 'remove');
+		await expect(Promise.all([renderer.cover(request), renderer.cover(request)])).resolves.toEqual([drawn, drawn]);
+		expect(draw).toHaveBeenCalledTimes(2);
+		expect(renderer.fromDisk).toBe(0);
+		expect(remove).toHaveBeenCalledWith(jpeg);
+		expect(remove).toHaveBeenCalledWith(`${jpeg}.json`);
+		expect(new TextDecoder().decode(await app.vault.adapter.readBinary(jpeg))).toBe('jpeg');
+		await renderer.cover(request);
+		expect(draw).toHaveBeenCalledTimes(2);
+	});
+
+	it('evicts an unvalidated corrupt memory entry as well as its saved files', async () => {
+		const { app, renderer, draw, drawn, request } = setup();
+		await renderer.cover(request);
+		const file = app.vault.getFileByPath('Manual.pdf')!;
+		const key = cacheKey(file.path, file.stat.mtime, file.stat.size, 1, 180, 'page');
+		const bad = { ...drawn, blob: new Blob(['corrupt memory JPEG']) };
+		renderer.memory.set(key, bad, bad.blob.size);
+		vi.mocked(HTMLImageElement.prototype.decode).mockRejectedValueOnce(new Error('bad image'));
+		const remove = vi.spyOn(app.vault.adapter, 'remove');
+		await expect(renderer.cover(request)).resolves.toBe(drawn);
+		expect(renderer.memory.get(key)).toBe(drawn);
+		expect(draw).toHaveBeenCalledTimes(2);
+		expect(remove).toHaveBeenCalledTimes(2);
+		expect(await app.vault.adapter.exists('Manual.pdf')).toBe(true);
+	});
+
+	it('removes damaged cache even when the PDF itself can no longer render', async () => {
+		const { app, renderer, draw, request } = setup();
+		await renderer.cover(request);
+		const files = (await app.vault.adapter.list(renderer.diskFolder)).files;
+		renderer.memory.clear();
+		vi.mocked(HTMLImageElement.prototype.decode).mockRejectedValueOnce(new Error('bad image'));
+		draw.mockRejectedValue(new Error('bad PDF'));
+		await expect(renderer.cover(request)).rejects.toThrow('bad PDF');
+		for (const name of files) expect(await app.vault.adapter.exists(name)).toBe(false);
+		expect(renderer.memory.bytes).toBe(0);
+		expect(draw).toHaveBeenCalledTimes(2);
+		expect(await app.vault.adapter.exists('Manual.pdf')).toBe(true);
+	});
+
 	it('keeps the drawn cover when the saved cover file cannot be written', async () => {
 		const { app, renderer, drawn, request } = setup();
 		vi.spyOn(app.vault.adapter, 'writeBinary').mockRejectedValue(new Error('disk full'));
