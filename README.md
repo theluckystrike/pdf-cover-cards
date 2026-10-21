@@ -2,11 +2,11 @@
 
 PDF Cover Cards shows a PDF page on a Bases card. Keep one note for each document, with a PDF link. The plugin draws page 1 as its cover. Pick another page with `#page=N`.
 
-This layout uses core Bases to select, filter and sort notes. It draws PDF pages with the reader included in Obsidian.
+It uses core Bases to select, filter and sort notes, and the PDF reader of Obsidian to draw pages.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/pdf-cover-cards.gif" alt="A library base shown as cards with PDF covers, then the PDF files as cards, then papers cropped to the top half" width="720">
 
-Free: PDF covers on the first 30 matching cards. Pro: no limit, page crops, saved covers, PNG contact sheets. $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards) or [$15 one-time offer](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=666162&metadata_source=pdf-cover-cards).
+Pro costs $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards) or [$15 one-time offer](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=666162&metadata_source=pdf-cover-cards).
 
 ## Features
 
@@ -28,7 +28,7 @@ Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]
 
 ### Open the PDF at the cover page
 
-Each card with a PDF has an "Open at page N" button. The button opens the PDF of the cover at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab. Cards without a PDF have no button.
+Each card with a PDF has an "Open at page N" button that opens the PDF at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab. Cards without a PDF have no button.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/open-at-page.png" alt="Library cards, each with an Open at page 1 button under the author and the year" width="720">
 
@@ -54,7 +54,7 @@ Embed the layout in any note with `![[Library.base#Shelf]]`. When a PDF changes,
 
 ### Cover crop (Pro)
 
-Show only the top half or the top third of the page. For papers and reports, the title and the abstract are then large enough to read on the card.
+Show only the top half or the top third of the page. Then the title and abstract of a paper or report are large enough to read on the card.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/crop.png" alt="Two papers with covers cropped to the top half, so the title and abstract are readable" width="720">
 
@@ -83,15 +83,17 @@ The plugin draws covers near the screen, with at most two PDFs at a time by defa
 
 The free version draws the first 30 PDF covers in a view. It supports property and link rules, `#page=N`, PDF cards, view properties, embeds and live updates. A line reports skipped covers.
 
-Pro draws covers on every card (the free version draws the first 30), crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
+Pro draws covers on every card, crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
 
 1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
 3. The plugin copies a code and opens github.com/login/device. Paste the code there and approve.
 
-The status line then shows your GitHub login and the tier. If you sponsor after you sign in, select Refresh. A negative sponsorship answer turns Pro off.
+The status line then shows your GitHub login and the tier. If you sponsor after you sign in, select Refresh.
 
 ## Settings
+
+After a minor or major update, this plugin opens one What's new tab in the background. The tab and settings card suggest other NoteMods plugins and Zovo Chat and link to notemods.com for feedback ([privacy](https://notemods.com/privacy/)). The tab sends no data. Turn the tab off in Settings.
 
 The view options are in the base toolbar. Bases saves them with each view in the base file.
 
@@ -116,15 +118,15 @@ The plugin settings tab has the Pro section (sign in with GitHub, status and Ref
 
 ### Does PDF Cover Cards change my notes or my PDFs?
 
-No. It only reads them. The contact sheet export makes new PNG files. Saved covers go into the plugin folder, not between your notes.
+No. It only reads them. The contact sheet export makes new PNG files. Saved covers go into the plugin folder.
 
 ### How is this different from the core Cards layout?
 
-The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page. The first post of the request on the Obsidian forum ("Allow PDFs as card image in Base") has 16 likes.
+The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page.
 
 ### How fast is it?
 
-The plugin draws only the covers near the screen. In the end-to-end test, a base of 200 notes with 12 PDFs draws its first 30 covers. The time depends on your device and on the PDFs. The first open after the app starts is slower, because Obsidian loads its PDF reader then. Large scanned PDFs take longer.
+It draws only covers near the screen. In the end-to-end test, a base of 200 notes with 12 PDFs draws its first 30 covers. The first open after the app starts is slower, because Obsidian loads its PDF reader then. Large scanned PDFs take longer.
 
 ### Which PDFs work?
 
