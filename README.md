@@ -6,6 +6,8 @@ This layout uses core Bases to select, filter and sort notes. It draws PDF pages
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/pdf-cover-cards.gif" alt="A library base shown as cards with PDF covers, then the PDF files as cards, then papers cropped to the top half" width="720">
 
+Free: PDF covers on the first 30 matching cards. Pro: no limit, page crops, saved covers, PNG contact sheets. $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards) or [$15 one-time offer](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=666162&metadata_source=pdf-cover-cards).
+
 ## Features
 
 ### Page 1 of the linked PDF on each card
@@ -79,11 +81,11 @@ The plugin draws covers near the screen, with at most two PDFs at a time by defa
 
 ## Pro
 
-The free version draws the covers of the first 30 cards of a view that have a PDF. It includes the property and link rules, `#page=N`, PDF files as cards, the properties on the cards, embeds and live update. When a view has more cards with a PDF, a line above the cards says how many covers it did not draw.
+The free version draws the first 30 PDF covers in a view. It supports property and link rules, `#page=N`, PDF cards, view properties, embeds and live updates. A line reports skipped covers.
 
 Pro draws covers on every card (the free version draws the first 30), crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
 
-1. Sponsor [theluckystrike on GitHub Sponsors](https://github.com/sponsors/theluckystrike) with $5 a month, or $15 once. A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
+1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
 3. The plugin copies a code and opens github.com/login/device. Paste the code there and approve.
 
@@ -141,6 +143,8 @@ After sign in, PDF Cover Cards sends one query to `https://api.github.com/graphq
 After a successful check, Pro can work offline for up to 14 days. Sign out or a negative sponsorship answer turns Pro off. The plugin stores the GitHub token through the secret storage API of Obsidian. It does not put the token in its saved settings or its local sponsorship data. The local storage of this device keeps your GitHub login, the tier and the time of the last check. Sign out clears the token. You can also revoke the access in your GitHub settings, under Applications.
 
 ## Support
+
+Plugin page: [pdf-cover-cards](https://notemods.com/plugins/pdf-cover-cards/).
 
 Report bugs and feature requests in this repository's GitHub issues.
 
