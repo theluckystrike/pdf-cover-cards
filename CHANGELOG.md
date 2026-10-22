@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.4.0
+
+### Minor Changes
+
+- Cards without a PDF now show an image from the note as the cover, so PDF scans and photos fit on one shelf.
+
 ## 1.3.0
 
 ### Minor Changes

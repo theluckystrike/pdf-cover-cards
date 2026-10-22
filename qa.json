@@ -36,6 +36,13 @@
 		"wait": 900
 	},
 	{
+		"feature": "image-covers",
+		"caption": "A shelf of scans: three PDF covers, a photo of a notebook, a postcard image and a letter that has no file yet.",
+		"note": "Scans/Scans.base",
+		"eval": "await (async () => { const p = app.plugins.plugins['pdf-cover-cards']; p.pro.signOut(); app.workspace.rightSplit.collapse(); const end = Date.now() + 15000; while (Date.now() < end) { const v = p.targetView(); if (v?.cards.length === 6) { await v.fillAll(); const images = [...v.containerEl.querySelectorAll('.pdf-cover-card-cover img')]; if (v.cards.filter((c) => c.status === 'drawn').length === 5 && images.length === 5) { await Promise.all(images.map((img) => img.decode())); v.containerEl.scrollTo({ top: 0, behavior: 'instant' }); await new Promise(requestAnimationFrame); return 'ok'; } } await new Promise((r) => setTimeout(r, 50)); } throw new Error('Scan covers were not ready for the screenshot'); })()",
+		"wait": 1200
+	},
+	{
 		"feature": "embedded",
 		"caption": "The cover view embedded in a reading list note.",
 		"note": "Reading list.md",

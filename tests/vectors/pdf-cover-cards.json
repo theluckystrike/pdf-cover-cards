@@ -172,5 +172,270 @@
     "page": 1
    }
   }
+ ],
+ "imageFunction": "chooseImage",
+ "imageNote": "args = [CoverInput, vault paths]; a link path resolves to the exact vault path or to the one vault path that ends in /<link path>. expected = vault path of the image cover, or null.",
+ "imageCases": [
+  {
+   "name": "wiki image in the property",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[[Scans/Moss.jpg]]"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "Scans/Moss.jpg"
+  },
+  {
+   "name": "markdown image with encoded space",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[x](My%20Scan.png)"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "My Scan.png"
+  },
+  {
+   "name": "wiki path keeps a literal percent sequence",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[[100%25 scan.png]]"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "100%25 scan.png"
+  },
+  {
+   "name": "image entry is its own cover",
+   "args": [
+    {
+     "self": {
+      "path": "Cover.webp",
+      "ext": "webp"
+     },
+     "property": [],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "Cover.webp"
+  },
+  {
+   "name": "external image URL",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "https://example.com/a.png"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": null
+  },
+  {
+   "name": "link to a note",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[[notes.md]]"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": null
+  },
+  {
+   "name": "body embed when links are on",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [],
+     "links": [
+      "Moss.jpg#crop"
+     ],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "Scans/Moss.jpg"
+  },
+  {
+   "name": "body embed when links are off",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [],
+     "links": [
+      "Scans/Moss.jpg"
+     ],
+     "useLinks": false
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": null
+  },
+  {
+   "name": "property before body, upper-case extension",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[[Missing.png]]",
+      "![[Kiln.PNG|200]]"
+     ],
+     "links": [
+      "Scans/Moss.jpg"
+     ],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": "Scans/Kiln.PNG"
+  },
+  {
+   "name": "a PDF link is not an image",
+   "args": [
+    {
+     "self": {
+      "path": "Library/Note.md",
+      "ext": "md"
+     },
+     "property": [
+      "[[Attention.pdf]]"
+     ],
+     "links": [],
+     "useLinks": true
+    },
+    [
+     "Scans/Moss.jpg",
+     "My Scan.png",
+     "100%25 scan.png",
+     "Cover.webp",
+     "notes.md",
+     "Papers/Attention.pdf",
+     "Scans/Kiln.PNG"
+    ]
+   ],
+   "expected": null
+  }
  ]
 }

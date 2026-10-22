@@ -1,8 +1,9 @@
-import { Notice, Plugin, normalizePath, type TFile } from 'obsidian';
+import { Notice, Plugin, normalizePath, type App, type TFile } from 'obsidian';
 import type { SponsorsManager } from './license/index';
 import { createGitHubSponsors } from './license/github-obsidian';
 import { sheetLayout, sheetParts } from './cover';
 import { SPONSORS, bindPro, isPro, resetPro } from './pro';
+import { coverImage } from './image';
 import { CoverRenderer } from './render';
 import { DEFAULT_SETTINGS, PdfCoverCardsSettingTab, normalizeSettings, type PdfCoverCardsSettings } from './settings';
 import { PdfCoverView, VIEW_ID, viewOptions } from './view';
@@ -140,7 +141,7 @@ export default class PdfCoverCardsPlugin extends Plugin {
 		const files: TFile[] = [];
 		for (let k = 0; k < parts.length; k++) {
 			const [start, end] = parts[k]!;
-			const blob = await drawSheet(cards.slice(start, end), aspects.slice(start, end));
+			const blob = await drawSheet(this.app, cards.slice(start, end), aspects.slice(start, end));
 			if (!blob) {
 				new Notice('The contact sheet could not be drawn.');
 				break;
@@ -159,8 +160,17 @@ export default class PdfCoverCardsPlugin extends Plugin {
 	}
 }
 
-/** Draws the covers of `cards` on one PNG contact sheet with their titles. Null when the canvas gives no image. */
-async function drawSheet(cards: PdfCoverView['cards'], aspects: number[]): Promise<Blob | null> {
+/** MIME type of an image file for a Blob, from its extension. */
+function imageType(ext: string): string {
+	const e = ext.toLowerCase();
+	return e === 'svg' ? 'image/svg+xml' : e === 'jpg' ? 'image/jpeg' : `image/${e}`;
+}
+
+/**
+ * Draws the covers of `cards` on one PNG contact sheet with their titles. Null when the canvas gives no image.
+ * An image cover is decoded again from the file bytes, so the canvas holds only same-origin pixels.
+ */
+async function drawSheet(app: App, cards: PdfCoverView['cards'], aspects: number[]): Promise<Blob | null> {
 	const layout = sheetLayout(aspects, SHEET.columns, SHEET.cell, SHEET.gap, SHEET.title);
 	const canvas = createEl('canvas');
 	canvas.width = layout.width;
@@ -174,15 +184,25 @@ async function drawSheet(cards: PdfCoverView['cards'], aspects: number[]): Promi
 	for (let i = 0; i < cards.length; i++) {
 		const card = cards[i]!;
 		const cell = layout.cells[i]!;
-		const img = card.coverEl.querySelector('img');
-		if (!img) continue;
+		let img = card.coverEl.querySelector('img');
+		let url: string | null = null;
 		try {
+			if (card.image) {
+				const file = app.vault.getFileByPath(card.image);
+				if (!file) continue;
+				({ image: img, url } = await coverImage(new Blob([await app.vault.readBinary(file)], { type: imageType(file.extension) })));
+			}
+			if (!img) continue;
 			await img.decode();
+			// The top part of the image that the card shows: all of a PDF cover, the cropped top of an image cover.
+			const height = Math.min(img.naturalHeight, img.naturalWidth * card.aspect);
+			ctx.drawImage(img, 0, 0, img.naturalWidth, height, cell.x, cell.y, SHEET.cell, cell.coverHeight);
 		} catch {
-			// The view drew again during the export and its old image is gone. Leave this cell empty.
+			// The view drew again during the export and its old image is gone, or the image file cannot be read. Leave this cell empty.
 			continue;
+		} finally {
+			if (url) URL.revokeObjectURL(url);
 		}
-		ctx.drawImage(img, cell.x, cell.y, SHEET.cell, cell.coverHeight);
 		ctx.strokeStyle = '#d0d0d0';
 		ctx.strokeRect(cell.x + 0.5, cell.y + 0.5, SHEET.cell - 1, cell.coverHeight - 1);
 		ctx.fillStyle = '#222222';

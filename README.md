@@ -18,7 +18,7 @@ Choose a property that links to the PDF, for example `pdf: "[[Field Guide to Mos
 
 <details><summary>How the plugin finds the PDF and the page</summary>
 
-The plugin looks for the PDF in this order. A PDF file in the base is its own cover. Next comes the PDF property of the view, which can hold one link or a list. Last comes the first PDF that the note links to or embeds.
+The order: a PDF file in the base is its own cover, then the PDF property of the view (one link or a list), then the first PDF that the note links to or embeds.
 
 Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]`.
 
@@ -36,7 +36,7 @@ Each card with a PDF has an "Open at page N" button that opens the PDF at the pa
 
 Use "Previous page" or "Next page" to preview another page. The open button follows the preview. Controls appear on drawn PDFs with two or more pages. They stop at the first and last pages.
 
-Page browsing is free within the 30-cover limit. It does not change the PDF or the note. A view refresh restores the page from the PDF link.
+Browsing changes no file. A refresh restores the page from the link.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/page-browsing.png" alt="A PDF card on page 2 with controls for the previous and next pages" width="720">
 
@@ -46,6 +46,12 @@ A base can select the PDF files themselves, for example with the filter `file.ex
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/pdf-files.png" alt="A base of twelve PDF files, each drawn as its own card" width="720">
 
+### Images on cards without a PDF
+
+A card without a PDF shows an image: the entry itself when it is an image, then an image in the PDF property, then the first image that the note links to or embeds (with the link option on). PNG, JPG, GIF, WebP, AVIF, BMP and SVG files work. A PDF always wins. Image covers do not use the 30 free covers.
+
+<img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/image-covers.png" alt="A shelf of scans with three PDF covers, a photo of a notebook, a postcard image and one note without a file" width="720">
+
 ### Embeds and live update
 
 Embed the layout in any note with `![[Library.base#Shelf]]`. When a PDF changes, its cover draws again.
@@ -54,13 +60,13 @@ Embed the layout in any note with `![[Library.base#Shelf]]`. When a PDF changes,
 
 ### Cover crop (Pro)
 
-Show only the top half or the top third of the page. Then the title and abstract of a paper or report are large enough to read on the card.
+Show only the top half or the top third of the page or image. Then the title and abstract of a paper or report are large enough to read on the card.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/crop.png" alt="Two papers with covers cropped to the top half, so the title and abstract are readable" width="720">
 
 ### Contact sheet export (Pro)
 
-Export the drawn covers of the view to a PNG image, with the note name under each picture. A view with more than about 150 covers goes on more than one image. The images go into the folder for new files. Use the button above the cards or the command "Export the covers of this view as a contact sheet".
+Export the drawn covers of the view, image covers too, to a PNG image with the note names. More than about 150 covers go on more than one image. The images go into the folder for new files. Use the button above the cards or the command "Export the covers of this view as a contact sheet".
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/contact-sheet.png" alt="An exported PNG with twelve covers in a grid and the titles under them" width="720">
 
@@ -77,13 +83,11 @@ Export the drawn covers of the view to a PNG image, with the note name under eac
 3. Open the view options. In "PDF property", choose the property that holds the link to the PDF.
 4. Use "Properties" in the base toolbar to choose the properties that show under the title.
 
-The plugin draws covers near the screen, with at most two PDFs at a time by default. Pro saves JPEG covers in the plugin folder for reuse.
-
 ## Pro
 
-The free version draws the first 30 PDF covers in a view. It supports property and link rules, `#page=N`, PDF cards, view properties, embeds and live updates. A line reports skipped covers.
+The free version draws the first 30 PDF covers in a view. Image covers, `#page=N`, embeds and live updates are free. A line reports skipped covers.
 
-Pro draws covers on every card, crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
+Pro draws PDF covers on every card, crops covers to the top, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
 
 1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
@@ -101,6 +105,7 @@ The view options are in the base toolbar. Bases saves them with each view in the
 | --- | --- |
 | PDF property | The property that links to the PDF. It can hold one link or a list. |
 | Use the first PDF link in the note | When the property gives no PDF, use the first PDF that the note links to or embeds. On by default. |
+| Show images when there is no PDF | Shows an image on a card without a PDF. On by default. |
 | Card width | From 120 to 400 pixels. |
 | Show properties | Shows the properties of the view under the title. |
 | Cover crop (Pro) | Whole page, top half or top third. |
@@ -109,10 +114,10 @@ The view options are in the base toolbar. Bases saves them with each view in the
 
 The plugin settings tab has the Pro section (sign in with GitHub, status and Refresh) and these settings:
 
-- "Cover sharpness" is the largest pixel ratio of a drawn picture, from 1 to 3. 1 is the fastest, 2 is sharp on high-density screens. The default is 2.
-- "PDFs drawn at the same time" is from 1 to 4. Use 1 on a phone or with very large PDFs. The default is 2.
-- "Save drawn covers (Pro)" keeps the drawn pictures in the plugin folder. On by default.
-- "Clear saved covers" deletes the saved pictures. The command "Clear saved covers" does the same.
+- "Cover sharpness" is from 1 (fastest) to 3. The default, 2, is sharp on high-density screens.
+- "PDFs drawn at the same time" is from 1 to 4, default 2. Use 1 on a phone.
+- "Save drawn covers (Pro)" keeps PDF covers in the plugin folder. On by default.
+- "Clear saved covers" deletes them. A command does the same.
 
 ## FAQ
 
@@ -122,11 +127,11 @@ No. It only reads them. The contact sheet export makes new PNG files. Saved cove
 
 ### How is this different from the core Cards layout?
 
-The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page.
+The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page, and it shows an image on cards without a PDF. PDF scans and photos fit on one shelf.
 
 ### How fast is it?
 
-It draws only covers near the screen. In the end-to-end test, a base of 200 notes with 12 PDFs draws its first 30 covers. The first open after the app starts is slower, because Obsidian loads its PDF reader then. Large scanned PDFs take longer.
+It draws only covers near the screen, with two PDFs at a time by default. The first open after the app starts is slower, because Obsidian loads its PDF reader then.
 
 ### Which PDFs work?
 

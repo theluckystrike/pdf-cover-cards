@@ -51,7 +51,7 @@ describe('view registration', () => {
 	it('has the view id and the options in menu order', () => {
 		expect(VIEW_ID).toBe('pdf-cover-cards');
 		const opts = viewOptions();
-		expect(opts.map((o) => ('key' in o ? o.key : o.displayName))).toEqual(['pdfProperty', 'useLinks', 'cardWidth', 'showProps', 'Pro']);
+		expect(opts.map((o) => ('key' in o ? o.key : o.displayName))).toEqual(['pdfProperty', 'useLinks', 'showImages', 'cardWidth', 'showProps', 'Pro']);
 	});
 });
 

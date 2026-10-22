@@ -15,7 +15,7 @@ export const SPONSORS: SponsorsConfig = {
 };
 
 export const PRO_UI = {
-	proSummary: 'Pro draws covers on every card (the free version draws the first 30), crops covers to the top of the page, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views.',
+	proSummary: 'Pro draws PDF covers on every card (the free version draws the first 30), crops covers to the top of the page or image, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views.',
 	priceText: 'Sponsor $5 a month, or $15 once. When you have paid $15 in total, Pro stays on.',
 };
 

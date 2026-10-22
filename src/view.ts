@@ -1,6 +1,6 @@
 import { BasesView, Keymap, Notice, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
-import { chooseCover, coverSlots, pagesLabel, type CoverChoice, type Crop } from './cover';
-import { coverImage } from './image';
+import { barText, cardStatuses, chooseCover, chooseImage, imageAspect, pagesLabel, type CoverChoice, type Crop } from './cover';
+import { coverImage, decodeImage } from './image';
 import { FREE_MAX_COVERS, isPro, onProChange } from './pro';
 import type PdfCoverCardsPlugin from './main';
 
@@ -8,6 +8,8 @@ export const VIEW_ID = 'pdf-cover-cards';
 const DEFAULT_WIDTH = 180;
 /** A4 portrait: the placeholder shape before a cover is drawn. */
 const PLACEHOLDER_ASPECT = 1.414;
+/** Set after the first warning that the vault gives no resource URL for images, so the console gets one line. */
+let resourceWarned = false;
 
 /** Subpath that opens a PDF at the page of a choice, for example `#page=3`. */
 export function pdfSubpath(choice: CoverChoice): string {
@@ -38,13 +40,15 @@ export function openPdfButton(parent: HTMLElement, choice: CoverChoice, open: (c
 export interface CardState {
 	file: TFile;
 	choice: CoverChoice | null;
+	/** Vault path of the image cover, when the card has no PDF and "Show images when there is no PDF" is on. */
+	image: string | null;
 	coverEl: HTMLElement;
 	/** The "Open at page N" button, when the card has a PDF. */
 	openEl?: HTMLButtonElement;
 	pageControls?: HTMLElement;
 	/** True when this card is within the cover limit. */
 	slot: boolean;
-	/** drawn, empty (no PDF), locked (free limit), error, or waiting. */
+	/** drawn, empty (no PDF and no image), locked (free limit), error, or waiting. */
 	status: 'waiting' | 'drawn' | 'empty' | 'locked' | 'error';
 	aspect: number;
 	pages: number;
@@ -81,7 +85,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		this.register(onProChange(() => this.schedule()));
 		this.registerEvent(
 			this.app.vault.on('modify', (f) => {
-				if (f instanceof TFile && this.cards.some((c) => c.choice?.path === f.path)) this.schedule();
+				if (f instanceof TFile && this.cards.some((c) => c.choice?.path === f.path || c.image === f.path)) this.schedule();
 			}),
 		);
 		if (this.cards.length > 0) this.schedule();
@@ -109,13 +113,14 @@ export class PdfCoverView extends BasesView implements HoverParent {
 	}
 
 	/** The options of this view from the base file, with Pro-only options reset for free users. */
-	options(): { prop: BasesPropertyId | null; useLinks: boolean; width: number; showProps: boolean; crop: Crop } {
+	options(): { prop: BasesPropertyId | null; useLinks: boolean; showImages: boolean; width: number; showProps: boolean; crop: Crop } {
 		const c = this.config;
 		const width = Number(c.get('cardWidth') ?? DEFAULT_WIDTH);
 		const crop = c.get('crop');
 		return {
 			prop: c.getAsPropertyId('pdfProperty'),
 			useLinks: c.get('useLinks') !== false,
+			showImages: c.get('showImages') !== false,
 			width: Number.isFinite(width) ? Math.min(400, Math.max(120, width)) : DEFAULT_WIDTH,
 			showProps: c.get('showProps') !== false,
 			crop: isPro() && (crop === 'top-half' || crop === 'top-third') ? crop : 'page',
@@ -163,12 +168,14 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		const el = this.containerEl;
 		el.empty();
 		const resolve = (fromPath: string) => (linkpath: string) => this.app.metadataCache.getFirstLinkpathDest(linkpath, fromPath)?.path ?? null;
-		const choices = entries.map((e) =>
-			chooseCover({ self: { path: e.file.path, ext: e.file.extension }, property: this.propertyValues(e, opts.prop), links: opts.useLinks ? this.bodyLinks(e.file) : [], useLinks: opts.useLinks }, resolve(e.file.path)),
-		);
+		const inputs = entries.map((e) => ({ self: { path: e.file.path, ext: e.file.extension }, property: this.propertyValues(e, opts.prop), links: opts.useLinks ? this.bodyLinks(e.file) : [], useLinks: opts.useLinks }));
+		const choices = inputs.map((input, i) => chooseCover(input, resolve(entries[i]!.file.path)));
+		// A PDF always wins. An image is a cover only for a card without a PDF.
+		const images = inputs.map((input, i) => (choices[i] === null && opts.showImages ? chooseImage(input, resolve(entries[i]!.file.path)) : null));
+		const statuses = cardStatuses(choices.map((c, i) => (c ? 'pdf' : images[i] ? 'image' : null)), pro, FREE_MAX_COVERS);
 		const withPdf = choices.filter((c) => c !== null).length;
-		const slots = coverSlots(withPdf, pro, FREE_MAX_COVERS);
-		this.drawBar(el, entries.length, withPdf, slots);
+		const locked = statuses.filter((x) => x === 'locked').length;
+		this.drawBar(el, entries.length, withPdf, images.filter((x) => x !== null).length, locked);
 		if (entries.length === 0) {
 			el.createDiv({ cls: 'pdf-cover-cards-empty', text: 'No notes. The filters of this base select no files.' });
 			this.cards = [];
@@ -177,33 +184,28 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		const grid = el.createDiv({ cls: 'pdf-cover-cards-grid' });
 		grid.style.setProperty('--pdf-cover-cards-width', `${opts.width}px`);
 		const order = opts.showProps ? this.config.getOrder().filter((p) => p !== 'file.name' && p !== opts.prop) : [];
-		let used = 0;
-		this.cards = entries.map((entry, i) => {
-			const choice = choices[i] ?? null;
-			const slot = choice !== null && used++ < slots;
-			return this.card(grid, entry, choice, slot, order);
-		});
+		this.cards = entries.map((entry, i) => this.card(grid, entry, choices[i] ?? null, images[i] ?? null, statuses[i] ?? 'empty', order));
 		this.observer = new IntersectionObserver((seen) => this.onSeen(seen, run, opts), { root: null, rootMargin: '400px' });
 		for (const c of this.cards) if (c.slot) this.observer.observe(c.coverEl);
 	}
 
-	private drawBar(el: HTMLElement, entries: number, withPdf: number, slots: number): void {
+	private drawBar(el: HTMLElement, entries: number, withPdf: number, withImage: number, locked: number): void {
 		const bar = el.createDiv({ cls: 'pdf-cover-cards-bar' });
-		bar.createSpan({ text: `${entries} ${entries === 1 ? 'card' : 'cards'}, ${withPdf} with a PDF` });
-		if (slots < withPdf) {
-			bar.createSpan({ cls: 'pdf-cover-cards-limit', text: `The free version draws the first ${FREE_MAX_COVERS} covers. ${withPdf - slots} more ${withPdf - slots === 1 ? 'cover is' : 'covers are'} not drawn.` });
+		bar.createSpan({ text: barText(entries, withPdf, withImage) });
+		if (locked > 0) {
+			bar.createSpan({ cls: 'pdf-cover-cards-limit', text: `The free version draws the first ${FREE_MAX_COVERS} PDF covers. ${locked} more ${locked === 1 ? 'cover is' : 'covers are'} not drawn.` });
 		}
 		if (!isPro()) return;
 		const b = bar.createEl('button', { cls: 'pdf-cover-cards-export', text: 'Export contact sheet' });
 		b.addEventListener('click', () => void this.plugin.exportSheet(this));
 	}
 
-	private card(grid: HTMLElement, entry: BasesEntry, choice: CoverChoice | null, slot: boolean, order: BasesPropertyId[]): CardState {
+	private card(grid: HTMLElement, entry: BasesEntry, choice: CoverChoice | null, image: string | null, status: CardState['status'], order: BasesPropertyId[]): CardState {
 		const file = entry.file;
 		const card = grid.createDiv({ cls: 'pdf-cover-card', attr: { 'data-path': file.path, tabindex: '0' } });
 		const coverEl = card.createDiv({ cls: 'pdf-cover-card-cover' });
 		coverEl.style.setProperty('--pdf-cover-cards-aspect', String(PLACEHOLDER_ASPECT));
-		const state: CardState = { file, choice, coverEl, slot, status: choice ? (slot ? 'waiting' : 'locked') : 'empty', aspect: PLACEHOLDER_ASPECT, pages: 0 };
+		const state: CardState = { file, choice, image, coverEl, slot: status === 'waiting', status, aspect: PLACEHOLDER_ASPECT, pages: 0 };
 		if (state.status !== 'waiting') {
 			coverEl.addClass('is-placeholder');
 			setIcon(coverEl.createDiv({ cls: 'pdf-cover-card-icon' }), choice ? 'lock' : 'file-text');
@@ -243,6 +245,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 	/** Draws (or loads) the cover of one card into its cover element. */
 	async fill(card: CardState, run: number, opts: ReturnType<PdfCoverView['options']>): Promise<void> {
 		if (run !== this.token || card.status !== 'waiting') return;
+		if (!card.choice && card.image) return this.fillImage(card, card.image, run, opts);
 		const pdf = card.choice ? this.app.vault.getFileByPath(card.choice.path) : null;
 		if (!pdf || !card.choice) return;
 		try {
@@ -273,12 +276,52 @@ export class PdfCoverView extends BasesView implements HoverParent {
 			this.drawPageControls(card);
 		} catch (e) {
 			if (run !== this.token || card.status !== 'waiting') return;
-			card.status = 'error';
-			card.coverEl.removeClass('is-loading');
-			card.coverEl.addClass('is-placeholder');
-			setIcon(card.coverEl.createDiv({ cls: 'pdf-cover-card-icon' }), 'file-warning');
-			card.coverEl.createDiv({ cls: 'pdf-cover-card-note', text: 'This PDF could not be read' });
+			this.showError(card, 'This PDF could not be read');
 			console.warn(`PDF Cover Cards: ${pdf.path}`, e);
+		}
+	}
+
+	/** Shows the error placeholder on a card. Removes the loading indicator. */
+	private showError(card: CardState, text: string): void {
+		card.status = 'error';
+		card.coverEl.removeClass('is-loading');
+		card.coverEl.addClass('is-placeholder');
+		setIcon(card.coverEl.createDiv({ cls: 'pdf-cover-card-icon' }), 'file-warning');
+		card.coverEl.createDiv({ cls: 'pdf-cover-card-note', text });
+	}
+
+	/**
+	 * Shows an image file as the cover through its vault resource URL. No pdf.js, canvas, cache or saved cover. The
+	 * crop keeps the top of the image: the cover box gets the cropped aspect and the CSS shows the top of the image.
+	 */
+	private async fillImage(card: CardState, path: string, run: number, opts: ReturnType<PdfCoverView['options']>): Promise<void> {
+		const file = this.app.vault.getFileByPath(path);
+		const image = createEl('img');
+		try {
+			if (!file) throw new Error('The image file is missing');
+			image.src = this.app.vault.getResourcePath(file);
+		} catch (e) {
+			this.showError(card, 'This image could not be read');
+			if (!resourceWarned) console.warn(`PDF Cover Cards: no resource URL for ${path}`, e);
+			resourceWarned = true;
+			return;
+		}
+		try {
+			await decodeImage(image);
+			const aspect = imageAspect(image.naturalWidth, image.naturalHeight, opts.crop);
+			// Decode can finish after a redraw, unload, or a second fill of the same card.
+			if (run !== this.token || card.status !== 'waiting') return;
+			image.alt = file.name;
+			image.draggable = false;
+			card.coverEl.removeClass('is-loading');
+			card.coverEl.style.setProperty('--pdf-cover-cards-aspect', String(aspect));
+			card.coverEl.appendChild(image);
+			card.status = 'drawn';
+			card.aspect = aspect;
+		} catch (e) {
+			if (run !== this.token || card.status !== 'waiting') return;
+			this.showError(card, 'This image could not be read');
+			console.warn(`PDF Cover Cards: ${path}`, e);
 		}
 	}
 
@@ -346,6 +389,7 @@ export function viewOptions(): BasesAllOptions[] {
 	return [
 		{ type: 'property', key: 'pdfProperty', displayName: 'PDF property', placeholder: 'Property that links to a PDF' },
 		{ type: 'toggle', key: 'useLinks', displayName: 'Use the first PDF link in the note', default: true },
+		{ type: 'toggle', key: 'showImages', displayName: 'Show images when there is no PDF', default: true },
 		{ type: 'slider', key: 'cardWidth', displayName: 'Card width', default: DEFAULT_WIDTH, min: 120, max: 400, step: 10 },
 		{ type: 'toggle', key: 'showProps', displayName: 'Show properties', default: true },
 		{

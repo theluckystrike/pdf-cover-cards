@@ -70,6 +70,9 @@
 
 .pdf-cover-card-cover {
 	position: relative;
+
+	/* Without this, the box grows to the full image height and an image crop shows the whole image. */
+	overflow: hidden;
 	aspect-ratio: 1 / var(--pdf-cover-cards-aspect, 1.414);
 	background-color: var(--background-secondary);
 	border-bottom: 1px solid var(--background-modifier-border);

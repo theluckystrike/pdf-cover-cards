@@ -1,0 +1,11 @@
+filters:
+  and:
+    - file.hasTag("scan")
+views:
+  - type: pdf-cover-cards
+    name: Scans
+    order:
+      - file.name
+      - kind
+    pdfProperty: note.scan
+    cardWidth: 180

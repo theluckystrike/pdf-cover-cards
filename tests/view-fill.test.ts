@@ -14,7 +14,7 @@ describe('concurrent cover fills', () => {
 		cardEl.addEventListener('click', open);
 		cardEl.addEventListener('keydown', open);
 		const card: CardState = { file: app.vault.getFileByPath('Manual.pdf')! as never, choice,
-			coverEl: cardEl.createDiv(), openEl: openPdfButton(cardEl, choice, vi.fn()), slot: true, status: 'waiting', aspect: 1, pages: 0 };
+			image: null, coverEl: cardEl.createDiv(), openEl: openPdfButton(cardEl, choice, vi.fn()), slot: true, status: 'waiting', aspect: 1, pages: 0 };
 		const cover = vi.fn(async (r: { page: number }) => ({ blob: new Blob(['cover']), page: r.page, pages: 2, aspect: 1 }));
 		const opts = { prop: null, useLinks: true, width: 180, showProps: true, crop: 'page' as const };
 		const view = Object.assign(Object.create(PdfCoverView.prototype) as PdfCoverView, {
@@ -43,7 +43,7 @@ describe('concurrent cover fills', () => {
 	it('waits for the image and reports a final decode failure without retrying forever', async () => {
 		const app = App.createConfigured__({ files: { 'Manual.pdf': '' } });
 		const card: CardState = { file: app.vault.getFileByPath('Manual.pdf')! as never,
-			choice: { path: 'Manual.pdf', page: 1, from: 'self' }, coverEl: document.createElement('div'),
+			choice: { path: 'Manual.pdf', page: 1, from: 'self' }, image: null, coverEl: document.createElement('div'),
 			slot: true, status: 'waiting', aspect: 1.414, pages: 0 };
 		let reject!: (e: Error) => void;
 		vi.mocked(HTMLImageElement.prototype.decode).mockReturnValue(new Promise<void>((_, no) => { reject = no; }));
@@ -71,7 +71,7 @@ describe('concurrent cover fills', () => {
 		const card: CardState = {
 			file: app.vault.getFileByPath('Manual.pdf')! as never,
 			choice: { path: 'Manual.pdf', page: 1, from: 'self' },
-			coverEl, slot: true, status: 'waiting', aspect: 1.414, pages: 0,
+			image: null, coverEl, slot: true, status: 'waiting', aspect: 1.414, pages: 0,
 		};
 		const rendered = { blob: new Blob(['cover']), page: 1, pages: 4, aspect: 1.414 };
 		let finish!: (value: typeof rendered) => void;
@@ -106,7 +106,7 @@ describe('concurrent cover fills', () => {
 		const openEl = openPdfButton(cardEl, choice, open);
 		const card: CardState = {
 			file: app.vault.getFileByPath('Manual.pdf')! as never,
-			choice, coverEl, openEl, slot: true, status: 'waiting', aspect: 1.414, pages: 0,
+			choice, image: null, coverEl, openEl, slot: true, status: 'waiting', aspect: 1.414, pages: 0,
 		};
 		// The renderer clamps page 99 to the last page, 4.
 		const cover = vi.fn(async () => ({ blob: new Blob(['cover']), page: 4, pages: 4, aspect: 1.414 }));

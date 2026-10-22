@@ -80,8 +80,8 @@ export class PdfCoverCardsSettingTab extends PluginSettingTab {
 			{
 				name: 'Pro features',
 				desc: isPro()
-					? 'Pro is on: covers on every card, cover crop, saved covers and the contact sheet export.'
-					: `Free version: covers on the first ${FREE_MAX_COVERS} cards of a view, page choice with #page=N, properties on the cards. ${PRO_UI.proSummary}`,
+					? 'Pro is on: PDF covers on every card, cover crop, saved covers and the contact sheet export.'
+					: `Free version: PDF covers on the first ${FREE_MAX_COVERS} cards of a view, image covers on every card, page choice with #page=N, properties on the cards. ${PRO_UI.proSummary}`,
 			},
 		];
 	}

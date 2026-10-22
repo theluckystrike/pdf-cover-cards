@@ -32,20 +32,45 @@ export function pageOf(subpath: string): number {
 	return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
-/**
- * Reads a property value as written in a note ("[[Paper.pdf#page=3]]", "Paper.pdf", "[x](Paper.pdf)")
- * and returns the link path and page. Returns null when the value does not point at a .pdf file.
- */
-export function coverTarget(raw: string): CoverTarget | null {
+/** Splits a link as written into its path and subpath. Markdown destinations are decoded; others stay literal. */
+function parseLink(raw: string): { path: string; hash: string } {
 	const text = raw.trim();
 	const wiki = WIKI.exec(text);
 	const md = wiki ? null : MD.exec(text);
 	const destination = md ? (md[1] ?? md[2] ?? '') : text;
 	const path = (wiki ? wiki[1] : destination.split('#')[0])?.trim() ?? '';
 	const hash = wiki ? (wiki[2] ?? '') : destination.includes('#') ? destination.slice(destination.indexOf('#')) : '';
-	if (!/\.pdf$/i.test(path)) return null;
 	// Wiki links and metadata-cache links already contain literal vault paths.
-	return { path: md ? safeDecode(path) : path, page: pageOf(hash) };
+	return { path: md ? safeDecode(path) : path, hash };
+}
+
+/**
+ * Reads a property value as written in a note ("[[Paper.pdf#page=3]]", "Paper.pdf", "[x](Paper.pdf)")
+ * and returns the link path and page. Returns null when the value does not point at a .pdf file.
+ */
+export function coverTarget(raw: string): CoverTarget | null {
+	const { path, hash } = parseLink(raw);
+	if (!/\.pdf$/i.test(path)) return null;
+	return { path, page: pageOf(hash) };
+}
+
+/** File extensions that a card can show as an image cover. */
+export const IMAGE_EXTENSIONS = ['avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 'svg', 'webp'];
+
+/** True when a path ends in one of IMAGE_EXTENSIONS (any case). */
+export function isImagePath(path: string): boolean {
+	const dot = path.lastIndexOf('.');
+	return dot >= 0 && IMAGE_EXTENSIONS.includes(path.slice(dot + 1).toLowerCase());
+}
+
+/**
+ * The link path of an image link as written, with the same rules as coverTarget and without the subpath. Null for
+ * other files and for URLs with a scheme (http:, https:, data: and others): the plugin makes no network requests.
+ */
+export function imageTarget(raw: string): string | null {
+	const { path } = parseLink(raw);
+	if (/^[a-z][a-z0-9+.-]*:/i.test(path) || !isImagePath(path)) return null;
+	return path;
 }
 
 /** What chooseCover needs to know about one base entry. */
@@ -85,6 +110,49 @@ export function chooseCover(input: CoverInput, resolve: Resolve): CoverChoice | 
 		if (t) return { ...t, from: 'link' };
 	}
 	return null;
+}
+
+/**
+ * The image cover of a card that has no PDF. Call it only when chooseCover gives null. Order: the entry itself when
+ * it is an image, then the first value of the PDF property that resolves to an image, then (when useLinks) the
+ * first image that the note links to or embeds. Gives the vault path, or null.
+ */
+export function chooseImage(input: CoverInput, resolve: Resolve): string | null {
+	if (isImagePath(`.${input.self.ext}`)) return input.self.path;
+	const first = (values: string[]): string | null => {
+		for (const v of values) {
+			const t = imageTarget(v);
+			const path = t ? resolve(t) : null;
+			if (path && isImagePath(path)) return path;
+		}
+		return null;
+	};
+	return first(input.property) ?? (input.useLinks ? first(input.links) : null);
+}
+
+/** What a card shows: a PDF page, an image, or nothing. */
+export type CoverKind = 'pdf' | 'image' | null;
+
+/**
+ * Status of each card before its cover is drawn. PDF cards use the free cover slots in base order; image cards
+ * never use a slot, so they are always drawn.
+ */
+export function cardStatuses(kinds: CoverKind[], pro: boolean, freeMax: number): ('waiting' | 'locked' | 'empty')[] {
+	const slots = coverSlots(kinds.filter((k) => k === 'pdf').length, pro, freeMax);
+	let used = 0;
+	return kinds.map((k) => (k === 'image' ? 'waiting' : k === 'pdf' ? (used++ < slots ? 'waiting' : 'locked') : 'empty'));
+}
+
+/** Bar text: "6 cards, 3 with a PDF", plus ", 2 with an image" when there are image covers. */
+export function barText(cards: number, withPdf: number, withImage: number): string {
+	const base = `${cards} ${cards === 1 ? 'card' : 'cards'}, ${withPdf} with a PDF`;
+	return withImage > 0 ? `${base}, ${withImage} with an image` : base;
+}
+
+/** Cover aspect (height / width) of a decoded image after a crop. Throws for a nonfinite or zero size. */
+export function imageAspect(width: number, height: number, crop: Crop): number {
+	if (!(width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height))) throw new Error('image size must be finite and positive');
+	return (height / width) * cropShare(crop);
 }
 
 /** Part of the page height that a crop keeps. */
