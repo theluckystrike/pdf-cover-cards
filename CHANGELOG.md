@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.5.0
+
+### Minor Changes
+
+- 54a0750: New view option "Turn pages with the scroll wheel". When it is on, a horizontal scroll or Shift with the wheel on a cover turns the pages of the PDF. A plain vertical scroll still scrolls the base.
+
 ## 1.4.0
 
 ### Minor Changes

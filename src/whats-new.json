@@ -1,10 +1,10 @@
 {
 	"id": "pdf-cover-cards",
 	"name": "PDF Cover Cards",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"changes": [
-		"Cards without a PDF now show an image from the note as the cover, so PDF scans and photos fit on one shelf.",
-		"Turn this off with the view option \"Show images when there is no PDF\"."
+		"New view option \"Turn pages with the scroll wheel\". Turn it on, then scroll left or right, or hold Shift and use the wheel, with the pointer on a cover to turn the pages of its PDF.",
+		"A plain scroll up or down still scrolls the base. The option is off by default."
 	],
 	"tip": "Add #page=N to a PDF link to show another page as the card cover.",
 	"thanks": "Hi, I am Michael, a solo developer in Poland. PDF Cover Cards is one of over 100 small plugins that I make. Thank you for using it with Bases. Bases is still new, and your setups teach me a lot.",

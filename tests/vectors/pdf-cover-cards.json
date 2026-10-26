@@ -171,6 +171,26 @@
     "path": "a.pdf",
     "page": 1
    }
+  },
+  {
+   "name": "page past the end keeps the number (the renderer clamps it to the page count)",
+   "args": [
+    "[[a.pdf#page=99]]"
+   ],
+   "expected": {
+    "path": "a.pdf",
+    "page": 99
+   }
+  },
+  {
+   "name": "page that is not a number falls back to 1",
+   "args": [
+    "[[a.pdf#page=abc]]"
+   ],
+   "expected": {
+    "path": "a.pdf",
+    "page": 1
+   }
   }
  ],
  "imageFunction": "chooseImage",
@@ -436,6 +456,327 @@
     ]
    ],
    "expected": null
+  }
+ ],
+ "wheelNote": "wheelCases: fn names the function. wheelPixels(args[0]) gives page pixels (positive = next page). wheelTurn(carry, pixels) gives {step, carry}. turnTarget(page, step, pages) gives the page.",
+ "wheelCases": [
+  {
+   "name": "plain vertical scroll does not turn pages",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 0,
+     "deltaY": 120,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 0
+  },
+  {
+   "name": "vertical scroll with a small horizontal drift does not turn pages",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 8,
+     "deltaY": 40,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 0
+  },
+  {
+   "name": "horizontal swipe to the right is the next page",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 30,
+     "deltaY": 4,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 30
+  },
+  {
+   "name": "horizontal swipe to the left is the previous page",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": -25,
+     "deltaY": 0,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": -25
+  },
+  {
+   "name": "Shift with the wheel down is the next page",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 0,
+     "deltaY": 100,
+     "deltaMode": 0,
+     "shiftKey": true,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 100
+  },
+  {
+   "name": "Shift with the wheel that the OS made horizontal",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": -100,
+     "deltaY": 0,
+     "deltaMode": 0,
+     "shiftKey": true,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": -100
+  },
+  {
+   "name": "Ctrl with the wheel is zoom, not a page turn",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 50,
+     "deltaY": 100,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": true,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 0
+  },
+  {
+   "name": "Cmd with the wheel is not a page turn",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 50,
+     "deltaY": 0,
+     "deltaMode": 0,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": true,
+     "altKey": false
+    }
+   ],
+   "expected": 0
+  },
+  {
+   "name": "Alt with the wheel is not a page turn",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 0,
+     "deltaY": 100,
+     "deltaMode": 0,
+     "shiftKey": true,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": true
+    }
+   ],
+   "expected": 0
+  },
+  {
+   "name": "line mode counts 40 pixels a line",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 0,
+     "deltaY": 3,
+     "deltaMode": 1,
+     "shiftKey": true,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 120
+  },
+  {
+   "name": "page mode counts 800 pixels a page",
+   "fn": "wheelPixels",
+   "args": [
+    {
+     "deltaX": 1,
+     "deltaY": 0,
+     "deltaMode": 2,
+     "shiftKey": false,
+     "ctrlKey": false,
+     "metaKey": false,
+     "altKey": false
+    }
+   ],
+   "expected": 800
+  },
+  {
+   "name": "sum below the step keeps the sum",
+   "fn": "wheelTurn",
+   "args": [
+    20,
+    30
+   ],
+   "expected": {
+    "step": 0,
+    "carry": 50
+   }
+  },
+  {
+   "name": "sum reaches the step: one page, sum resets",
+   "fn": "wheelTurn",
+   "args": [
+    50,
+    15
+   ],
+   "expected": {
+    "step": 1,
+    "carry": 0
+   }
+  },
+  {
+   "name": "one large event turns one page only",
+   "fn": "wheelTurn",
+   "args": [
+    0,
+    800
+   ],
+   "expected": {
+    "step": 1,
+    "carry": 0
+   }
+  },
+  {
+   "name": "backward sum gives the previous page",
+   "fn": "wheelTurn",
+   "args": [
+    -40,
+    -40
+   ],
+   "expected": {
+    "step": -1,
+    "carry": 0
+   }
+  },
+  {
+   "name": "direction change starts the sum again",
+   "fn": "wheelTurn",
+   "args": [
+    55,
+    -10
+   ],
+   "expected": {
+    "step": 0,
+    "carry": -10
+   }
+  },
+  {
+   "name": "zero pixels keep the sum",
+   "fn": "wheelTurn",
+   "args": [
+    30,
+    0
+   ],
+   "expected": {
+    "step": 0,
+    "carry": 30
+   }
+  },
+  {
+   "name": "next page from 2 of 4",
+   "fn": "turnTarget",
+   "args": [
+    2,
+    1,
+    4
+   ],
+   "expected": 3
+  },
+  {
+   "name": "stops at the last page",
+   "fn": "turnTarget",
+   "args": [
+    4,
+    1,
+    4
+   ],
+   "expected": 4
+  },
+  {
+   "name": "stops at page 1",
+   "fn": "turnTarget",
+   "args": [
+    1,
+    -1,
+    4
+   ],
+   "expected": 1
+  },
+  {
+   "name": "a page past the end is the last page",
+   "fn": "turnTarget",
+   "args": [
+    99,
+    0,
+    4
+   ],
+   "expected": 4
+  },
+  {
+   "name": "page 0 is page 1",
+   "fn": "turnTarget",
+   "args": [
+    0,
+    0,
+    4
+   ],
+   "expected": 1
+  },
+  {
+   "name": "one-page PDF stays on page 1",
+   "fn": "turnTarget",
+   "args": [
+    1,
+    1,
+    1
+   ],
+   "expected": 1
+  },
+  {
+   "name": "no page count stays on page 1",
+   "fn": "turnTarget",
+   "args": [
+    3,
+    1,
+    0
+   ],
+   "expected": 1
   }
  ]
 }

@@ -12,7 +12,7 @@ Pro costs $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/thel
 
 ### Page 1 of the linked PDF on each card
 
-Choose a property that links to the PDF, for example `pdf: "[[Field Guide to Mosses.pdf]]"`. Each card shows page 1 of that file, the note name, the properties of the view and the page count. Click a card to open the note. Ctrl-click (Cmd-click on macOS) opens it in a new tab. The plugin can also use the first PDF that a note links to or embeds.
+Choose a property that links to the PDF, for example `pdf: "[[Field Guide to Mosses.pdf]]"`. Each card shows page 1 of that file, the note name, the properties of the view and the page count. Click a card to open the note. Ctrl-click (Cmd-click on macOS) opens it in a new tab.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/shelf.png" alt="Twelve cards with drawn book, manual and paper covers, each with author and year" width="720">
 
@@ -28,17 +28,23 @@ Add `#page=N` to a link to show another page, for example `[[Manual.pdf#page=3]]
 
 ### Open the PDF at the cover page
 
-Each card with a PDF has an "Open at page N" button that opens the PDF at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab. Cards without a PDF have no button.
+Each card with a PDF has an "Open at page N" button that opens the PDF at the page that the card shows. Ctrl-click (Cmd-click on macOS) the button to open the PDF in a new tab.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/open-at-page.png" alt="Library cards, each with an Open at page 1 button under the author and the year" width="720">
 
 ### Browse PDF pages on a card
 
-Use "Previous page" or "Next page" to preview another page. The open button follows the preview. Controls appear on drawn PDFs with two or more pages. They stop at the first and last pages.
+Use "Previous page" or "Next page" to preview another page. The open button follows the preview. Controls appear on drawn PDFs with two or more pages and stop at the first and last pages.
 
 Browsing changes no file. A refresh restores the page from the link.
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/page-browsing.png" alt="A PDF card on page 2 with controls for the previous and next pages" width="720">
+
+### Turn pages with the scroll wheel
+
+Turn on the view option "Turn pages with the scroll wheel", then scroll sideways on a cover or use Shift and the wheel. One scroll gesture turns one page. Pause for a moment to turn the next page. A vertical scroll scrolls the base.
+
+<img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/wheel-pages.png" alt="A PDF card on page 3 after two swipes" width="720">
 
 ### PDF files as cards
 
@@ -85,9 +91,9 @@ Export the drawn covers of the view, image covers too, to a PNG image with the n
 
 ## Pro
 
-The free version draws the first 30 PDF covers in a view. Image covers, `#page=N`, embeds and live updates are free. A line reports skipped covers.
+The free version draws the first 30 PDF covers in a view. Image covers, `#page=N`, embeds and live updates are free.
 
-Pro draws PDF covers on every card, crops covers to the top, saves drawn covers so large bases open fast, and exports PNG contact sheets, split for large views. To get it:
+Pro draws PDF covers on every card, crops covers to the top, saves drawn covers so large bases open fast, and exports PNG contact sheets. To get it:
 
 1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
@@ -99,7 +105,7 @@ The status line then shows your GitHub login and the tier. If you sponsor after 
 
 After a minor or major update, this plugin opens one What's new tab in the background. The tab and settings card suggest other NoteMods plugins and Zovo Chat and link to notemods.com for feedback ([privacy](https://notemods.com/privacy/)). The tab sends no data. Turn the tab off in Settings.
 
-The view options are in the base toolbar. Bases saves them with each view in the base file.
+Bases saves the view options with each view in the base file.
 
 | Option | What it does |
 | --- | --- |
@@ -108,16 +114,17 @@ The view options are in the base toolbar. Bases saves them with each view in the
 | Show images when there is no PDF | Shows an image on a card without a PDF. On by default. |
 | Card width | From 120 to 400 pixels. |
 | Show properties | Shows the properties of the view under the title. |
+| Turn pages with the scroll wheel | Off by default. |
 | Cover crop (Pro) | Whole page, top half or top third. |
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/settings.png" alt="The plugin settings with the Pro section, cover sharpness, parallel drawing and saved covers" width="720">
 
-The plugin settings tab has the Pro section (sign in with GitHub, status and Refresh) and these settings:
+The plugin settings tab has the Pro section and these settings:
 
 - "Cover sharpness" is from 1 (fastest) to 3. The default, 2, is sharp on high-density screens.
-- "PDFs drawn at the same time" is from 1 to 4, default 2. Use 1 on a phone.
+- "PDFs drawn at the same time" is from 1 to 4, default 2.
 - "Save drawn covers (Pro)" keeps PDF covers in the plugin folder. On by default.
-- "Clear saved covers" deletes them. A command does the same.
+- "Clear saved covers" deletes them.
 
 ## FAQ
 
@@ -127,11 +134,11 @@ No. It only reads them. The contact sheet export makes new PNG files. Saved cove
 
 ### How is this different from the core Cards layout?
 
-The core Cards layout shows an image property as the picture. It shows nothing for a PDF link. This plugin draws the PDF page, and it shows an image on cards without a PDF. PDF scans and photos fit on one shelf.
+The core Cards layout shows nothing for a PDF link. This plugin draws the PDF page, and it shows an image on cards without a PDF.
 
 ### How fast is it?
 
-It draws only covers near the screen, with two PDFs at a time by default. The first open after the app starts is slower, because Obsidian loads its PDF reader then.
+It draws only covers near the screen, with two PDFs at a time by default. The first open after app start is slower, as Obsidian loads its PDF reader.
 
 ### Which PDFs work?
 

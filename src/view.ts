@@ -1,5 +1,5 @@
 import { BasesView, Keymap, Notice, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
-import { barText, cardStatuses, chooseCover, chooseImage, imageAspect, pagesLabel, type CoverChoice, type Crop } from './cover';
+import { barText, cardStatuses, chooseCover, chooseImage, imageAspect, pagesLabel, turnTarget, wheelGesture, type CoverChoice, type Crop, type WheelGesture } from './cover';
 import { coverImage, decodeImage } from './image';
 import { FREE_MAX_COVERS, isPro, onProChange } from './pro';
 import type PdfCoverCardsPlugin from './main';
@@ -52,6 +52,10 @@ export interface CardState {
 	status: 'waiting' | 'drawn' | 'empty' | 'locked' | 'error';
 	aspect: number;
 	pages: number;
+	/** The page that the wheel asks for. A fast wheel moves it; the card draws only the newest target. */
+	target?: number;
+	/** True while turnTo draws pages for this card. */
+	turning?: boolean;
 }
 
 /** Bases view that shows each entry as a card with the first page (or a chosen page) of its PDF as the cover. */
@@ -64,6 +68,10 @@ export class PdfCoverView extends BasesView implements HoverParent {
 	private observer: IntersectionObserver | null = null;
 	private token = 0;
 	private timer: number | null = null;
+	/** The cover element of each card of the newest draw, for the wheel listener. */
+	private byCover = new WeakMap<HTMLElement, CardState>();
+	/** The current wheel gesture over the cards (wheelGesture), or null. */
+	private gesture: WheelGesture | null = null;
 
 	constructor(
 		controller: QueryController,
@@ -113,7 +121,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 	}
 
 	/** The options of this view from the base file, with Pro-only options reset for free users. */
-	options(): { prop: BasesPropertyId | null; useLinks: boolean; showImages: boolean; width: number; showProps: boolean; crop: Crop } {
+	options(): { prop: BasesPropertyId | null; useLinks: boolean; showImages: boolean; width: number; showProps: boolean; crop: Crop; wheel: boolean } {
 		const c = this.config;
 		const width = Number(c.get('cardWidth') ?? DEFAULT_WIDTH);
 		const crop = c.get('crop');
@@ -124,6 +132,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 			width: Number.isFinite(width) ? Math.min(400, Math.max(120, width)) : DEFAULT_WIDTH,
 			showProps: c.get('showProps') !== false,
 			crop: isPro() && (crop === 'top-half' || crop === 'top-third') ? crop : 'page',
+			wheel: c.get('wheelPages') === true,
 		};
 	}
 
@@ -185,6 +194,10 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		grid.style.setProperty('--pdf-cover-cards-width', `${opts.width}px`);
 		const order = opts.showProps ? this.config.getOrder().filter((p) => p !== 'file.name' && p !== opts.prop) : [];
 		this.cards = entries.map((entry, i) => this.card(grid, entry, choices[i] ?? null, images[i] ?? null, statuses[i] ?? 'empty', order));
+		this.byCover = new WeakMap(this.cards.map((c) => [c.coverEl, c]));
+		this.gesture = null;
+		// One listener for the grid. Not passive: a page turn must stop the default scroll of the same gesture.
+		if (opts.wheel) grid.addEventListener('wheel', this.wheelListener(run), { passive: false });
 		this.observer = new IntersectionObserver((seen) => this.onSeen(seen, run, opts), { root: null, rootMargin: '400px' });
 		for (const c of this.cards) if (c.slot) this.observer.observe(c.coverEl);
 	}
@@ -346,6 +359,8 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		if (!this.cards.includes(card) || !card.slot || card.status !== 'drawn' || !card.choice) return;
 		const page = card.choice.page + step;
 		if (!Number.isInteger(page) || page < 1 || page > card.pages || page === card.choice.page) return;
+		// The buttons and the wheel share the target. A wheel event during this draw moves the target on from here.
+		if (!card.turning) card.target = page;
 		const image = card.coverEl.querySelector('img');
 		if (image) {
 			URL.revokeObjectURL(image.src);
@@ -358,6 +373,57 @@ export class PdfCoverView extends BasesView implements HoverParent {
 		card.status = 'waiting';
 		card.pageControls?.querySelectorAll('button').forEach(button => { button.disabled = true; });
 		await this.fill(card, this.token, this.options());
+	}
+
+	/**
+	 * Turns a drawn card to a page, as the wheel asks. Calls during a draw only move the target. When a draw ends,
+	 * the card draws the newest target, so a fast wheel does not draw each page between.
+	 */
+	async turnTo(card: CardState, page: number): Promise<void> {
+		card.target = turnTarget(page, 0, card.pages);
+		if (card.turning) return;
+		card.turning = true;
+		try {
+			for (;;) {
+				const want = card.target;
+				if (!this.cards.includes(card) || card.status !== 'drawn' || !card.choice || want === card.choice.page) break;
+				const before = card.choice.page;
+				await this.changePage(card, want - before);
+				if (card.choice.page === before) break;
+			}
+		} finally {
+			card.turning = false;
+			// A stop without progress (redraw, error) must not leave a target that the card does not show.
+			if (card.choice) card.target = card.choice.page;
+		}
+	}
+
+	/**
+	 * Wheel on a cover, with "Turn pages with the scroll wheel" on. A sideways or Shift wheel gesture turns one page
+	 * (wheelGesture). A vertical scroll and a scroll at the first or last page keep their default scroll.
+	 */
+	/** The wheel listener of one draw. It does nothing after a redraw or unload (both change the token). */
+	wheelListener(run: number): (evt: WheelEvent) => void {
+		return (evt) => {
+			if (run === this.token) this.onWheel(evt);
+		};
+	}
+
+	onWheel(evt: WheelEvent): void {
+		// Every wheel event over the grid belongs to the gesture, also on a card body or a card that cannot turn.
+		const { state, pixels, step } = wheelGesture(this.gesture, evt, evt.timeStamp);
+		this.gesture = state;
+		if (pixels === 0) return;
+		const target = evt.target as Element | null;
+		const coverEl = typeof target?.closest === 'function' ? target.closest<HTMLElement>('.pdf-cover-card-cover') : null;
+		const card = coverEl ? this.byCover.get(coverEl) : undefined;
+		if (!card || !this.cards.includes(card) || !card.slot || !card.choice || card.pages < 2) return;
+		if (card.status !== 'drawn' && !card.turning) return;
+		const current = card.target ?? card.choice.page;
+		// At the first or last page the event is not used, so the default scroll is not blocked.
+		if (turnTarget(current, Math.sign(pixels), card.pages) === current) return;
+		evt.preventDefault();
+		if (step !== 0) void this.turnTo(card, turnTarget(current, step, card.pages));
 	}
 
 	/** Draws every cover within the limit, also those off screen (contact sheet export). */
@@ -392,6 +458,7 @@ export function viewOptions(): BasesAllOptions[] {
 		{ type: 'toggle', key: 'showImages', displayName: 'Show images when there is no PDF', default: true },
 		{ type: 'slider', key: 'cardWidth', displayName: 'Card width', default: DEFAULT_WIDTH, min: 120, max: 400, step: 10 },
 		{ type: 'toggle', key: 'showProps', displayName: 'Show properties', default: true },
+		{ type: 'toggle', key: 'wheelPages', displayName: 'Turn pages with the scroll wheel', default: false },
 		{
 			type: 'group',
 			displayName: 'Pro',

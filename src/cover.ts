@@ -328,3 +328,127 @@ export function sheetParts(aspects: number[], columns: number, cell: number, gap
 export function pagesLabel(n: number): string {
 	return `${n} ${n === 1 ? 'page' : 'pages'}`;
 }
+
+/** The fields of a wheel event that wheelPixels reads. */
+export interface WheelInput {
+	deltaX: number;
+	deltaY: number;
+	/** 0 pixels, 1 lines, 2 pages (WheelEvent.deltaMode). */
+	deltaMode: number;
+	shiftKey: boolean;
+	ctrlKey: boolean;
+	metaKey: boolean;
+	altKey: boolean;
+}
+
+/** Pixels for one line and one page of a wheel event in line or page mode. */
+export const WHEEL_LINE = 40;
+export const WHEEL_PAGE = 800;
+/** Wheel pixels for one page turn. */
+export const WHEEL_STEP = 60;
+
+/**
+ * The part of a wheel event that turns pages, in pixels. Positive is the next page. A horizontal scroll counts
+ * (right is next), and Shift with the vertical wheel counts (down is next). A plain vertical scroll gives 0, so the
+ * base keeps its normal scroll. Ctrl, Cmd and Alt give 0: they are zoom and other app gestures.
+ */
+export function wheelPixels(e: WheelInput): number {
+	if (e.ctrlKey || e.metaKey || e.altKey) return 0;
+	const x = Number.isFinite(e.deltaX) ? e.deltaX : 0;
+	const y = Number.isFinite(e.deltaY) ? e.deltaY : 0;
+	let d = 0;
+	if (e.shiftKey) d = y !== 0 ? y : x;
+	else if (Math.abs(x) > Math.abs(y)) d = x;
+	const unit = e.deltaMode === 1 ? WHEEL_LINE : e.deltaMode === 2 ? WHEEL_PAGE : 1;
+	return d * unit;
+}
+
+/**
+ * Adds wheel pixels to the running sum and returns the page step (-1, 0 or 1) and the new sum. At most one page for
+ * each event. The sum starts again when the direction changes and after a step.
+ */
+export function wheelTurn(carry: number, pixels: number, threshold = WHEEL_STEP): { step: number; carry: number } {
+	if (!Number.isFinite(pixels) || pixels === 0) return { step: 0, carry: Number.isFinite(carry) ? carry : 0 };
+	const base = Number.isFinite(carry) && Math.sign(carry) === Math.sign(pixels) ? carry : 0;
+	const sum = base + pixels;
+	if (Math.abs(sum) >= threshold) return { step: Math.sign(sum), carry: 0 };
+	return { step: 0, carry: sum };
+}
+
+/** A wheel gesture ends after this many milliseconds without a wheel event (the inertia tail is part of it). */
+export const WHEEL_GESTURE_MS = 250;
+/** Movement in pixels that sets the axis of a new gesture. */
+export const WHEEL_DECIDE_PX = 15;
+
+/** The state of the current wheel gesture over the cards. */
+export interface WheelGesture {
+	/** Time of the last wheel event. */
+	at: number;
+	/** null until the gesture moves WHEEL_DECIDE_PX; then "turn" (sideways or Shift) or "scroll". */
+	axis: 'turn' | 'scroll' | null;
+	/** Sideways and vertical movement before the axis is set. */
+	sx: number;
+	sy: number;
+	/** Page pixels since the gesture start or the last turn, in one direction. */
+	carry: number;
+	/** Direction of the turn of this gesture (1 or -1), or 0 before a turn. */
+	done: number;
+	/** Page pixels of the current run of clearly sideways events in a scroll gesture. */
+	run: number;
+}
+
+/**
+ * One wheel event of a gesture. Returns the new gesture state, the page pixels of the event (0: the event is not a
+ * page turn event, keep its default scroll) and the page step (-1, 0 or 1).
+ * - An event is clearly sideways when |x| > 2|y|, or when Shift is held. Other events (vertical) are never used.
+ * - The axis is set when the gesture has moved WHEEL_DECIDE_PX: "turn" when the movement is clearly sideways.
+ *   In a scroll gesture, a run of clearly sideways events of WHEEL_DECIDE_PX starts a new turn gesture.
+ * - Pixel mode: one page for each gesture. After a turn, events of the same direction (the inertia tail) do not turn
+ *   pages until WHEEL_GESTURE_MS pass with no wheel event. This is also true for a mouse wheel in pixel mode: a
+ *   continuous spin is one gesture. (Chromium merges events during a main thread stall, so size and gaps of events
+ *   cannot tell notches from inertia.)
+ * - Line and page mode (wheel notches): one page for each event.
+ */
+export function wheelGesture(state: WheelGesture | null, e: WheelInput, t: number): { state: WheelGesture; pixels: number; step: number } {
+	const time = Number.isFinite(t) ? t : 0;
+	const gap = state ? time - state.at : Infinity;
+	const fresh = state !== null && gap >= 0 && gap <= WHEEL_GESTURE_MS;
+	let s: WheelGesture = fresh ? { ...state, at: time } : { at: time, axis: null, sx: 0, sy: 0, carry: 0, done: 0, run: 0 };
+	const none = (): { state: WheelGesture; pixels: number; step: number } => ({ state: s, pixels: 0, step: 0 });
+	if (e.ctrlKey || e.metaKey || e.altKey) return none();
+	const unit = e.deltaMode === 1 ? WHEEL_LINE : e.deltaMode === 2 ? WHEEL_PAGE : 1;
+	const x = (Number.isFinite(e.deltaX) ? e.deltaX : 0) * unit;
+	const y = (Number.isFinite(e.deltaY) ? e.deltaY : 0) * unit;
+	const px = e.shiftKey ? (y !== 0 ? y : x) : x;
+	const sideways = px !== 0 && (e.shiftKey || Math.abs(x) > 2 * Math.abs(y));
+	if (s.axis === null) {
+		s = { ...s, sx: s.sx + (e.shiftKey ? Math.abs(px) : Math.abs(x)), sy: s.sy + (e.shiftKey ? 0 : Math.abs(y)), carry: s.carry + (sideways ? px : 0) };
+		if (e.shiftKey) s.axis = 'turn';
+		else if (s.sx + s.sy >= WHEEL_DECIDE_PX) s.axis = s.sx > 2 * s.sy ? 'turn' : 'scroll';
+		if (s.axis !== 'turn' || !sideways) return none();
+		// The pixels of this event are in carry already.
+		s.carry -= px;
+	} else if (s.axis === 'scroll') {
+		if (!sideways) {
+			s.run = 0;
+			return none();
+		}
+		s.run = Math.sign(s.run) === Math.sign(px) ? s.run + px : px;
+		if (Math.abs(s.run) < WHEEL_DECIDE_PX) return none();
+		// The axis changed clearly: a new turn gesture starts with this run.
+		s = { ...s, axis: 'turn', carry: s.run - px, done: 0, run: 0 };
+	} else if (!sideways) return none();
+	const dir = Math.sign(px);
+	if (e.deltaMode === 1 || e.deltaMode === 2) return { state: { ...s, carry: 0, done: dir }, pixels: px, step: dir };
+	if (s.done === dir) return { state: s, pixels: px, step: 0 };
+	const r = wheelTurn(s.carry, px);
+	return r.step !== 0 ? { state: { ...s, carry: 0, done: r.step }, pixels: px, step: r.step } : { state: { ...s, carry: r.carry }, pixels: px, step: 0 };
+}
+
+/** The page after a step, kept between 1 and the page count. Returns 1 for a bad page or page count. */
+export function turnTarget(page: number, step: number, pages: number): number {
+	const last = Number.isInteger(pages) && pages >= 1 ? pages : 1;
+	const from = Number.isInteger(page) ? page : 1;
+	const to = from + (Number.isInteger(step) ? step : 0);
+	return Math.min(last, Math.max(1, to));
+}

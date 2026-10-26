@@ -1,7 +1,6 @@
 {
 	"name": "pdf-cover-cards",
-	"repository": {"type": "git", "url": "theluckystrike/pdf-cover-cards.git"},
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"private": true,
 	"description": "Shows the first page, or a chosen page, of the PDF linked from each note as the card cover in a Bases view.",
 	"main": "main.js",

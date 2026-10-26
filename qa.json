@@ -29,6 +29,14 @@
 		"wait": 900
 	},
 	{
+		"feature": "wheel-pages",
+		"caption": "With \"Turn pages with the scroll wheel\" on, two short swipes to the right on a cover show page 3. The open button follows.",
+		"note": "Library.base",
+		"eval": "await (async () => { const p = app.plugins.plugins['pdf-cover-cards']; p.pro.signOut(); await new Promise((r) => setTimeout(r, 800)); p.targetView().config.set('wheelPages', true); const end = Date.now() + 15000; let v = null; let c = null; while (Date.now() < end) { await new Promise((r) => setTimeout(r, 100)); v = p.targetView(); if (v?.options().wheel && v.cards.length === 12) { await v.fillAll(); c = v.cards.find((x) => x.pages > 1 && x.status === 'drawn'); if (c) break; } } if (!c) throw new Error('No drawn multi-page card with the wheel option on'); c.coverEl.scrollIntoView({ block: 'center' }); for (let i = 0; i < 2; i++) { c.coverEl.querySelector('img').dispatchEvent(new WheelEvent('wheel', { deltaX: 80, bubbles: true, cancelable: true })); await new Promise((r) => setTimeout(r, 400)); } const stop = Date.now() + 10000; while (Date.now() < stop && !(c.choice.page === 3 && c.status === 'drawn' && !c.turning)) await new Promise((r) => setTimeout(r, 50)); if (c.choice.page !== 3 || c.status !== 'drawn') throw new Error('The wheel did not reach page 3'); await c.coverEl.querySelector('img').decode(); return 'ok'; })()",
+		"after": "await (async () => { app.plugins.plugins['pdf-cover-cards'].targetView()?.config.set('wheelPages', false); await new Promise((r) => setTimeout(r, 500)); return 'ok'; })()",
+		"wait": 900
+	},
+	{
 		"feature": "pdf-files",
 		"caption": "A base of PDF files: each PDF is its own cover.",
 		"note": "PDF files.base",
