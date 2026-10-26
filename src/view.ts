@@ -1,7 +1,7 @@
-import { BasesView, Keymap, Notice, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
+import { BasesView, Keymap, TFile, setIcon, type App, type BasesAllOptions, type PaneType, type BasesEntry, type BasesPropertyId, type HoverParent, type HoverPopover, type QueryController } from 'obsidian';
 import { barText, cardStatuses, chooseCover, chooseImage, imageAspect, pagesLabel, turnTarget, wheelGesture, type CoverChoice, type Crop, type WheelGesture } from './cover';
 import { coverImage, decodeImage } from './image';
-import { FREE_MAX_COVERS, isPro, onProChange } from './pro';
+import { FREE_MAX_COVERS, isPro, onProChange, proNotice } from './pro';
 import type PdfCoverCardsPlugin from './main';
 
 export const VIEW_ID = 'pdf-cover-cards';
@@ -446,7 +446,7 @@ export class PdfCoverView extends BasesView implements HoverParent {
 
 	/** Shows a notice that a feature needs Pro. */
 	static needsPro(feature: string): void {
-		new Notice(`${feature} is a pro feature. Sponsor on GitHub, then sign in from the plugin settings.`);
+		proNotice(`${feature} is a pro feature.`);
 	}
 }
 

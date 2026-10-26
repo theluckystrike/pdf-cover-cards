@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.5.1
+
+### Patch Changes
+
+- The PDF Cover Cards notice for a Pro feature now has a Sponsor on GitHub button.
+
 ## 1.5.0
 
 ### Minor Changes
