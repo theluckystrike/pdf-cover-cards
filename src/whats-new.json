@@ -1,9 +1,9 @@
 {
 	"id": "pdf-cover-cards",
 	"name": "PDF Cover Cards",
-	"version": "1.5.1",
+	"version": "1.5.2",
 	"changes": [
-		"The PDF Cover Cards notice for a Pro feature now has a Sponsor on GitHub button."
+		"The Sponsor on GitHub button now opens the one-time payment tab of GitHub Sponsors."
 	],
 	"tip": "Add #page=N to a PDF link to show another page as the card cover.",
 	"thanks": "Hi, I am Michael, a solo developer in Poland. PDF Cover Cards is one of over 100 small plugins that I make. Thank you for using it with Bases. Bases is still new, and your setups teach me a lot.",
