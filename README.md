@@ -6,7 +6,17 @@ It uses core Bases to select, filter and sort notes, and the PDF reader of Obsid
 
 <img src="https://raw.githubusercontent.com/theluckystrike/pdf-cover-cards/HEAD/docs/pdf-cover-cards.gif" alt="A library base shown as cards with PDF covers, then the PDF files as cards, then papers cropped to the top half" width="720">
 
-Pro costs $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards) or [$15 one-time offer](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=666162&metadata_source=pdf-cover-cards).
+Pro costs $15 one time or $5 a month: [Sponsor](https://github.com/sponsors/theluckystrike?frequency=one-time&metadata_source=pdf-cover-cards) or [$15 one-time offer](https://github.com/sponsors/theluckystrike/sponsorships?tier_id=666162&metadata_source=pdf-cover-cards).
+
+## Quick start
+
+Link a PDF of your vault in a note:
+
+```markdown
+Source: [[Report.pdf]]
+```
+
+Create a base, or open one. Select the view menu in the base toolbar and add a view of the type "PDF covers". The plugin draws page 1 as its cover.
 
 ## Features
 
@@ -95,7 +105,7 @@ The free version draws the first 30 PDF covers in a view. Image covers, `#page=N
 
 Pro draws PDF covers on every card, crops covers to the top, saves drawn covers so large bases open fast, and exports PNG contact sheets. To get it:
 
-1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
+1. Sponsor through [GitHub Sponsors](https://github.com/sponsors/theluckystrike?frequency=one-time&metadata_source=pdf-cover-cards). A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply.
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
 3. The plugin copies a code and opens github.com/login/device. Paste the code there and approve.
 
@@ -148,7 +158,7 @@ Each PDF that the Obsidian PDF viewer opens. A damaged or locked PDF shows a sho
 
 The core features are free. Pro features need a GitHub Sponsors sponsorship of theluckystrike: $5 a month or more, or $15 once. A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply. Your notes stay readable and editable with or without Pro.
 
-GitHub handles the payment. Sponsor at https://github.com/sponsors/theluckystrike. You need no account for the free features. Pro needs the GitHub account that sponsors.
+GitHub handles the payment. Sponsor at https://github.com/sponsors/theluckystrike?frequency=one-time&metadata_source=pdf-cover-cards. You need no account for the free features. Pro needs the GitHub account that sponsors.
 
 Until you select "Sign in with GitHub" in the settings, PDF Cover Cards makes no network requests. Sign in uses the GitHub device flow. PDF Cover Cards sends its public client ID and the scope `read:user` to `https://github.com/login/device/code` and shows you a code. While you enter the code at https://github.com/login/device, it asks `https://github.com/login/oauth/access_token` every few seconds to check the sign-in status. The scope permits profile reads only. GitHub needs this access to show the sponsorship tier. It grants no repository scope and no write access.
 
