@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.5.3
+
+### Patch Changes
+
+- The Pro notice of PDF Cover Cards now says that one payment turns on Pro in every NoteMods plugin.
+
 ## 1.5.2
 
 ### Patch Changes

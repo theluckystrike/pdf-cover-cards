@@ -109,7 +109,7 @@ Pro draws PDF covers on every card, crops covers to the top, saves drawn covers 
 2. In Obsidian, open the settings of PDF Cover Cards and select "Sign in with GitHub".
 3. The plugin copies a code and opens github.com/login/device. Paste the code there and approve.
 
-The status line then shows your GitHub login and the tier. If you sponsor after you sign in, select Refresh.
+The status line then shows your GitHub login and the tier.
 
 ## Settings
 
@@ -157,6 +157,8 @@ Each PDF that the Obsidian PDF viewer opens. A damaged or locked PDF shows a sho
 ## Payment, account and network
 
 The core features are free. Pro features need a GitHub Sponsors sponsorship of theluckystrike: $5 a month or more, or $15 once. A total payment of $15 meets the payment requirement for Pro without further payment. Sign-in and the checks below still apply. Your notes stay readable and editable with or without Pro.
+
+[One payment turns on Pro in every NoteMods plugin](https://notemods.com/pro/).
 
 GitHub handles the payment. Sponsor at https://github.com/sponsors/theluckystrike?frequency=one-time&metadata_source=pdf-cover-cards. You need no account for the free features. Pro needs the GitHub account that sponsors.
 
