@@ -1,5 +1,11 @@
 # pdf-cover-cards
 
+## 1.5.4
+
+### Patch Changes
+
+- The Sponsor button now opens the NoteMods one-time tier.
+
 ## 1.5.3
 
 ### Patch Changes
